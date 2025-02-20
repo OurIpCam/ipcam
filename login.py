@@ -1,14 +1,15 @@
 from flask import Flask, redirect, request, session, url_for, send_file, render_template
 import requests
 import os
-
+from dotenv import load_dotenv
+load_dotenv()
 
 app = Flask(__name__)
 app.secret_key = os.urandom(24)  # Secret key for session handling
 
 # LINE Login Credentials
-LINE_CLIENT_ID = "2006911351"
-LINE_CLIENT_SECRET = "f049a5c4224180099cd88dc599745cdf"
+LINE_CLIENT_ID = os.getenv('LINE_CLIENT_ID')
+LINE_CLIENT_SECRET = os.getenv('LINE_CLIENT_SECRET')
 REDIRECT_URI = "http://127.0.0.1:5000/callback"
 
 # LINE Authorization URL
