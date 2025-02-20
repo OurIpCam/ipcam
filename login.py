@@ -2,6 +2,7 @@ from flask import Flask, redirect, request, session, url_for, send_file, render_
 import requests
 import os
 
+
 app = Flask(__name__)
 app.secret_key = os.urandom(24)  # Secret key for session handling
 
