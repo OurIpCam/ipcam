@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ip camera</title>
+    <style>
+        body {
+            margin: 0;
+            font-family: Arial, sans-serif;
+        }
+        .sidebar {
+            width: 200px;
+            height: 100vh;
+            background-color: #333;
+            color: white;
+            position: fixed;
+            left: -180px;
+            top: 0;
+            transition: left 0.5s;
+            padding: 20px;
+        }
+        .sidebar:hover {
+            left: 0;
+        }
+        .sidebar button {
+            flex: 1;
+            width: 100%;
+            padding: 10px;
+            border: none;
+            background-color: #444;
+            color: white;
+            text-align: left;
+            cursor: pointer;
+        }
+        .sidebar button:hover {
+            background-color: #666;
+        }        
+        .content {
+            margin-left: 100px;
+        }
+        .btn_login {
+            position: fixed;
+            left: 500px;
+            bottom: 500px;
+            padding: 10px 50px;
+            background-color: #00bf97;
+            color: white;
+            border: none;
+            cursor: pointer;
+            border-radius: 5px;
+        }
+        .btn_login:hover {
+            background-color: #019a79;
+        }
+        
+    </style>
+</head>
+<body>
+    <div class="sidebar">
+        <button>專案</button>
+        <button>攝影機</button>
+        <button>聯絡人</button>
+        <button>設定</button>
+    </div>
+
+    <div class="content">
+        <h1>ip cam</h1>
+        <p>ip cam 駐守，成為您最好的助手</p>
+    </div>
+   
+    <button id="btn_login" class="btn_login">登入</button>
+    
+</body>
+<script>
+    document.addEventListener('DOMContentLoaded', async () => {
+        const btnLogin = document.getElementById('btn_login');
+        btnLogin.addEventListener('click', () => {
+            window.location.href = 'login.html';
+        });
+    });
+</script>
+</html>
