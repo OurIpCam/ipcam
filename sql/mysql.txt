@@ -1,0 +1,185 @@
+
+CREATE TABLE Users (
+    user_id VARCHAR(32) PRIMARY KEY, 
+    line_id VARCHAR(33) NOT NULL,   
+    user_name VARCHAR(50),      
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    token TEXT,
+    token_expiration DATETIME
+);
+CREATE TABLE Cameras (
+    camera_id INT AUTO_INCREMENT PRIMARY KEY,
+    user_id VARCHAR(32),
+    camera_name VARCHAR(50),
+    device_brand VARCHAR(50) NOT NULL,
+    device_model VARCHAR(50) NOT NULL,
+    ip_address VARCHAR(50),
+    camera_username VARCHAR(50),
+    camera_password VARCHAR(50),
+    rtsp_url TEXT,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (user_id) REFERENCES Users(user_id)
+);
+CREATE TABLE Projects (
+    project_id INT AUTO_INCREMENT PRIMARY KEY ON DELETE IN,
+    project_name VARCHAR(50) NOT NULL,
+    camera_id INT,
+    user_id VARCHAR(32),
+    start_time JSON NOT NULL,  
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,                             
+    FOREIGN KEY (camera_id) REFERENCES Cameras(camera_id),
+    FOREIGN KEY (user_id) REFERENCES Users(user_id)
+);
+CREATE TABLE Models (
+    model_id INT AUTO_INCREMENT PRIMARY KEY,
+    model_name VARCHAR(50) NOT NULL,
+    model_version VARCHAR(50),
+    model_path TEXT
+);
+CREATE TABLE Events (
+    event_id INT AUTO_INCREMENT PRIMARY KEY,
+    event_name VARCHAR(50) NOT NULL,
+    model_id INT,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (model_id) REFERENCES Models(model_id)
+);
+CREATE TABLE EventNotifications (
+    project_id INT,
+    event_id INT,
+    notification_content TEXT NOT NULL,
+    PRIMARY KEY (project_id, event_id),
+    FOREIGN KEY (project_id) REFERENCES Projects(project_id)ON DELETE CASCADE,
+    FOREIGN KEY (event_id) REFERENCES Events(event_id)
+);
+CREATE TABLE ModelProjectRelations (
+    model_id INT,
+    project_id INT,
+    PRIMARY KEY (model_id, project_id),
+    FOREIGN KEY (model_id) REFERENCES Models(model_id),
+    FOREIGN KEY (project_id) REFERENCES Projects(project_id)ON DELETE CASCADE
+);
+CREATE TABLE EventProjectRelations (
+    event_id INT,
+    project_id INT,
+    PRIMARY KEY (event_id, project_id),
+    FOREIGN KEY (event_id) REFERENCES Events(event_id),
+    FOREIGN KEY (project_id) REFERENCES Projects(project_id)ON DELETE CASCADE
+);
+CREATE TABLE Contacts (
+    contact_id VARCHAR(32),
+    user_id VARCHAR(32),
+    contact_name VARCHAR(50),
+    PRIMARY KEY (contact_id, user_id),
+    FOREIGN KEY (user_id) REFERENCES Users(user_id)
+);
+CREATE TABLE ContactProjectRelations (
+    contact_id VARCHAR(32),
+    project_id INT,
+    PRIMARY KEY (contact_id, project_id),
+    FOREIGN KEY (contact_id) REFERENCES Contacts(contact_id),
+    FOREIGN KEY (project_id) REFERENCES Projects(project_id)ON DELETE CASCADE
+);
+CREATE TABLE AbnormalEvents (
+    abnormal_id INT AUTO_INCREMENT PRIMARY KEY,
+    project_id INT,
+    event_id INT,
+    occurred_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (project_id) REFERENCES Projects(project_id)ON DELETE CASCADE,
+    FOREIGN KEY (event_id) REFERENCES Events(event_id)
+);
+
+===================================測試指令=============================================
+新增使用者:
+insert into Users(user_id,line_id,user_name)
+values("12345678901234567890123456789012","U12345678901234567890123456789012","jimmy");
+insert into Users(user_id,line_id,user_name)
+values("12345678901234567890123456789013","U12345678901234567890123456789013","neko");
+
+登入:
+update users set token = "00000000",token_expiration = '2024-03-31 15:30:45' where user_id = "12345678901234567890123456789012";
+
+登出:
+update users set token = NULL,token_expiration = NULL where user_id = "12345678901234567890123456789012";
+
+取得用戶資訊:
+select * from users where user_id = "12345678901234567890123456789012";
+
+新增模型:
+insert into Models(model_name,model_version,model_path)
+values("test_model","3.2.2",'C:\\Users\\Admin\\Desktop'); 需要使用\\來避免insert後\不見
+
+刪除模型:
+delete from models where model_id = 1;
+
+讀取模型:
+select * from models;
+
+修改模型:
+update models set model_name="rename",model_version = "3.2.3",model_path="C:\\Users\\Admin\\Desktop\\ipcam"; 需要使用\\來避免insert後\不見
+
+新增事件:
+insert into Events(event_name,model_id)
+values("test_event",1);
+
+刪除事件:
+delete from events where event_id=1;
+
+查詢事件:
+select * from events;
+
+新增攝影機:
+insert into Cameras(user_id,camera_name,device_brand,device_model,ip_address,camera_username,camera_password,rtsp_url)
+values("12345678901234567890123456789012","testCam","dlink","dcs-8620lh","192.168.0.1","Admin","081265","rtsp://admin:644181@192.168.137.238/live/profile.1");
+
+刪除攝影機:
+delete from cameras where camera_id = 1;
+
+讀取攝影機:
+select * from cameras where camera_id =2;
+
+修改攝影機:
+update cameras set camera_name = "rename_cameras" where camera_id=2;
+
+新增聯絡人:
+insert into Contacts(contact_id,user_id,contact_name)
+values("12345678901234567890123456789013","12345678901234567890123456789012","爸爸賺了好多米呀");
+
+
+刪除聯絡人:
+delete from Contacts where contact_id= "12345678901234567890123456789013" and user_id="12345678901234567890123456789012";
+
+修改聯絡人:
+update Contacts set contact_name="nekooooo~~~" where contact_id= "12345678901234567890123456789013" and user_id="12345678901234567890123456789012";
+
+查詢聯絡人:
+select * from contacts where user_id = "12345678901234567890123456789012";
+
+新增專案:
+insert into Projects(project_name,camera_id,user_id,start_time)
+values("家門口",1,"12345678901234567890123456789012",'{"1": {"start": "10:00", "end": "22:00"},"2": {"start": "10:00", "end": "22:00"},"3": {"start": "10:00", "end": "22:00"},"4": {"start": "10:00", "end": "22:00"},"5": {"start": "10:00", "end": "22:00"},"6": {"start": "10:00", "end": "22:00"},"7": {"start": "10:00", "end": "22:00"}}');
+insert into EventProjectRelations(event_id,project_id)
+values(1,1),(2,1);
+insert into ModelProjectRelations(model_id,project_id)
+values(1,1),(2,1);
+insert into ContactProjectRelations(contact_id,project_id)
+values("12345678901234567890123456789013",1);
+insert into EventNotifications(project_id,event_id,notification_content)
+values(1,1,"門口有人1"),(1,2,"門口沒人2");
+
+刪除專案:
+delete from projects where project_id = 1;
+
+讀取專案:
+select * from projects;
+
+修改專案:
+update 你要更新甚麼都可以
+
+異常通知:
+insert into AbnormalEvents(project_id,event_id)
+values(1,2);
+
+查詢異常事件:
+Select * from AbnormalEvents;
+
+
