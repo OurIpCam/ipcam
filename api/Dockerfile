@@ -1,21 +1,24 @@
-# 使用 Python 3.9 作為基礎映像檔
+# 使用官方 Python 基底映像
 FROM python:3.9-slim
 
 # 設定工作目錄
 WORKDIR /app
 
-# 複製程式碼到容器內
+# 複製本地的需求檔案進容器
+COPY requirements.txt .
+
+# 安裝 Python 依賴
+RUN pip install --no-cache-dir -r requirements.txt
+
+# 複製應用程式碼進容器
 COPY . .
 
-# 安裝指定版本的 Flask
-RUN pip install flask==2.0.2
+# 設定環境變數 (可選, 依據需要)
+ENV FLASK_APP=ipcam.py
+ENV FLASK_RUN_HOST=0.0.0.0 
 
-# 開放 Flask 需要的端口
+# 開放 5000 端口 (Flask 預設端口)
 EXPOSE 5000
 
-# 設定環境變數
-ENV FLASK_APP=api.py
-ENV FLASK_RUN_HOST=0.0.0.0
-
-# 啟動 Flask 應用
-CMD ["flask", "run"]
+# 設定容器啟動時執行 Flask 應用
+CMD ["python", "ipcam.py"]

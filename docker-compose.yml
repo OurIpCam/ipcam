@@ -1,0 +1,58 @@
+version: '3.8'
+
+services:
+  # MySQL 服務
+  sql:
+    build: ./sql  # 從 sql 資料夾中構建映像
+    container_name: mysql-container
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      MYSQL_DATABASE: ${MYSQL_DATABASE}
+    volumes:
+      - ./sql/init_db.sql:/docker-entrypoint-initdb.d/init_db.sql  # 將 SQL 初始化檔案掛載到容器
+      - db_data:/var/lib/mysql  # 資料持久化
+    ports:
+      - "3306:3306"  # 開放 MySQL 端口
+    networks:
+      - ipcam-network
+    restart: always
+
+  # Web 服務
+  web:
+    build: ./web  # 從 web 資料夾中構建映像
+    container_name: web-container
+    depends_on:
+      - sql  # 等待 MySQL 服務啟動完成
+    ports:
+      - "80:80"  # 假設 Web 服務運行在 80 端口
+    networks:
+      - ipcam-network
+    restart: always
+
+  # Model 服務
+  model:
+    build: ./model  # 從 model 資料夾中構建映像
+    container_name: model-container
+    depends_on:
+      - sql  # 等待 MySQL 服務啟動完成
+    networks:
+      - ipcam-network
+    restart: always
+
+  # API 服務
+  api:
+    build: ./api  # 從 api 資料夾中構建映像
+    container_name: api-container
+    depends_on:
+      - sql  # 等待 MySQL 服務啟動完成
+    ports:
+      - "5000:5000"  # 假設 API 服務運行在 5000 端口
+    networks:
+      - ipcam-network
+    restart: always
+
+volumes:
+  db_data:  # 持久化 MySQL 資料
+
+networks:
+  ipcam-network:  # 定義一個網絡，讓所有容器可以互相通信
