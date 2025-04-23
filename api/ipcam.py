@@ -157,7 +157,7 @@ def user():
 
     user_id = payload.get("user_id")
     name = payload.get("name")
-    line_user_id = payload.get("line_user_id"),
+    line_user_id = payload.get("line_user_id")
     picture_url = payload.get("picture_url", "")
     exp = payload.get("exp")
 
