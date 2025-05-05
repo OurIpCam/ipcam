@@ -1,0 +1,90 @@
+CREATE TABLE Users (
+    user_id INT PRIMARY KEY, 
+    line_id VARCHAR(33) NOT NULL,   
+    user_name VARCHAR(20),      
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    token TEXT
+);
+CREATE TABLE Cameras (
+    camera_id INT AUTO_INCREMENT PRIMARY KEY,
+    user_id INT,
+    camera_name VARCHAR(20),
+    device_brand VARCHAR(20) NOT NULL,
+    device_model VARCHAR(20) NOT NULL,
+    ip_address VARCHAR(27),
+    camera_username VARCHAR(20),
+    camera_password VARCHAR(20),
+    rtsp_url TEXT,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (user_id) REFERENCES Users(user_id)
+);
+CREATE TABLE Projects (
+    project_id INT AUTO_INCREMENT PRIMARY KEY,
+    project_name VARCHAR(20) NOT NULL,
+    camera_id INT,
+    user_id INT,
+    start_time JSON NOT NULL,
+    status VARCHAR(1) NOT NULL,  
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,                             
+    FOREIGN KEY (camera_id) REFERENCES Cameras(camera_id),
+    FOREIGN KEY (user_id) REFERENCES Users(user_id)
+);
+CREATE TABLE Models (
+    model_id INT AUTO_INCREMENT PRIMARY KEY,
+    model_name VARCHAR(20) NOT NULL,
+    model_version VARCHAR(20),
+    event_type VARCHAR(25),
+    model_path TEXT
+);
+CREATE TABLE Events (
+    event_id INT AUTO_INCREMENT PRIMARY KEY,
+    event_name VARCHAR(20) NOT NULL,
+    model_id INT,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (model_id) REFERENCES Models(model_id)
+);
+CREATE TABLE EventNotifications (
+    project_id INT,
+    event_id INT,
+    notification_content TEXT NOT NULL,
+    PRIMARY KEY (project_id, event_id),
+    FOREIGN KEY (project_id) REFERENCES Projects(project_id)ON DELETE CASCADE,
+    FOREIGN KEY (event_id) REFERENCES Events(event_id)
+);
+CREATE TABLE ModelProjectRelations (
+    model_id INT,
+    project_id INT,
+    PRIMARY KEY (model_id, project_id),
+    FOREIGN KEY (model_id) REFERENCES Models(model_id),
+    FOREIGN KEY (project_id) REFERENCES Projects(project_id)ON DELETE CASCADE
+);
+CREATE TABLE EventProjectRelations (
+    event_id INT,
+    project_id INT,
+    PRIMARY KEY (event_id, project_id),
+    FOREIGN KEY (event_id) REFERENCES Events(event_id),
+    FOREIGN KEY (project_id) REFERENCES Projects(project_id)ON DELETE CASCADE
+);
+CREATE TABLE Contacts (
+    contact_id INT,
+    user_id INT,
+    line_id VARCHAR(33),
+    contact_name VARCHAR(20),
+    PRIMARY KEY (contact_id, user_id),
+    FOREIGN KEY (user_id) REFERENCES Users(user_id)
+);
+CREATE TABLE ContactProjectRelations (
+    contact_id INT,
+    project_id INT,
+    PRIMARY KEY (contact_id, project_id),
+    FOREIGN KEY (contact_id) REFERENCES Contacts(contact_id),
+    FOREIGN KEY (project_id) REFERENCES Projects(project_id)ON DELETE CASCADE
+);
+CREATE TABLE AbnormalEvents (
+    abnormal_id INT AUTO_INCREMENT PRIMARY KEY,
+    project_id INT,
+    event_id INT,
+    occurred_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (project_id) REFERENCES Projects(project_id) ON DELETE CASCADE,
+    FOREIGN KEY (event_id) REFERENCES Events(event_id)
+);
