@@ -1,7 +1,7 @@
 CREATE TABLE Admin (
     admin_id INT PRIMARY KEY,
     admin_password VARCHAR(32),
-    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
 );
 CREATE TABLE Users (
     user_id INT PRIMARY KEY, 
@@ -40,7 +40,7 @@ CREATE TABLE Models (
     model_version VARCHAR(20),
     event_type VARCHAR(25),
     model_path TEXT,
-    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
 );
 CREATE TABLE Events (
     event_id INT AUTO_INCREMENT PRIMARY KEY,
