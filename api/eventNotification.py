@@ -45,27 +45,29 @@ def verify_token(token):
     except jwt.InvalidTokenError:
         return False, "無效的 Token"
 
-@app.route('/event/abnormal/create', methods=["POST"])
+@app.route('/event/abnormal', methods=["POST"])
 def create_abnormal_event():
     data = request.get_json()
     token = data.get('token', '')
-    is_valid = verify_token(token)
+    is_valid, _ = verify_token(token)
 
     if not is_valid:
         return jsonify({"error": "Token 驗證失敗"}), 401
+
     project_id = data.get("project_id")
     event_id = data.get("event_id")
     picture_url = data.get("picture_url", "").strip()
     occurred_at = data.get("occurred_at")
 
-    if not occurred_at:
-        occurred_at = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-
-    if not project_id or not event_id or not picture_url:
+    if not project_id or not event_id or not picture_url or not occurred_at:
         return jsonify({"error": "缺少必要欄位"}), 400
 
-    cursor = db.cursor()
+    try:
+        datetime.datetime.strptime(occurred_at, "%Y-%m-%d %H:%M:%S")
+    except ValueError:
+        return jsonify({"error": "發生時間格式錯誤，需為 YYYY-MM-DD HH:MM:SS"}), 400
 
+    cursor = db.cursor()
     try:
         cursor.execute("""
             INSERT INTO AbnormalEvents (project_id, event_id, picture_url, occurred_at)
@@ -78,5 +80,6 @@ def create_abnormal_event():
         return jsonify({"error": str(e)}), 500
     finally:
         cursor.close()
+        
 if __name__ == '__main__':
     app.run(debug=True)
