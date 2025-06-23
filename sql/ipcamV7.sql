@@ -23,6 +23,13 @@ CREATE TABLE Cameras (
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (user_id) REFERENCES Users(user_id)
 );
+CREATE TABLE Devices (
+    device_id INT AUTO_INCREMENT PRIMARY KEY,
+    user_id INT,
+    Manufacture_date DATETIME DEFAULT CURRENT_TIMESTAMP,
+    Model VARCHAR(20) NOT NULL,
+    FOREIGN KEY (user_id) REFERENCES Users(user_id)
+);
 CREATE TABLE Projects (
     project_id INT AUTO_INCREMENT PRIMARY KEY,
     project_name VARCHAR(20) NOT NULL,
@@ -35,13 +42,6 @@ CREATE TABLE Projects (
     FOREIGN KEY (camera_id) REFERENCES Cameras(camera_id),
     FOREIGN KEY (user_id) REFERENCES Users(user_id),
     FOREIGN KEY (device_id) REFERENCES Devices(device_id)
-);
-CREATE TABLE Devices (
-    device_id INT AUTO_INCREMENT PRIMARY KEY,
-    user_id INT,
-    Manufacture_date DATETIME DEFAULT CURRENT_TIMESTAMP,
-    Model VARCHAR(20) NOT NULL,
-    FOREIGN KEY (user_id) REFERENCES Users(user_id),
 );
 CREATE TABLE Models (
     model_id INT AUTO_INCREMENT PRIMARY KEY,
