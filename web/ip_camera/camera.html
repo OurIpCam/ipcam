@@ -1,0 +1,395 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <title>IP CAMERA</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    
+    <script src="/static/js/header.js"></script>
+    <link rel="stylesheet" href="static/css/header.css">
+	<link rel="stylesheet" href="static/css/camera.css">
+</head>
+<body>
+
+    <div id="header-container"></div>
+
+    <!-- 頁首長條 -->
+    <header class="header-bar">
+        <!-- 漢堡選單按鈕 -->
+        <button class="hamburger-menu" onclick="toggleSidebar()">
+            <div class="hamburger-line"></div>
+            <div class="hamburger-line"></div>
+            <div class="hamburger-line"></div>
+        </button>
+
+        <!-- === 正中央圖片區塊 === -->
+        <div class="header-center-logo">
+            <img src="static/images/AI Monitor white.png" alt="中央Logo">
+        </div>
+    </header>
+
+    <!-- 側邊選單遮罩 -->
+    <div class="sidebar-overlay" onclick="closeSidebar()"></div>
+
+    <!-- 側邊選單 -->
+    <div class="sidebar" id="sidebar">
+        <div class="sidebar-content">
+            <a href="main.html" class="sidebar-item" onclick="navigateWithAnimation(event, this, 'main.html')">
+                <svg class="sidebar-icon" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zM9 17H7v-7h2v7zm4 0h-2V7h2v10zm4 0h-2v-4h2v4z"/>
+                </svg>
+                <span class="sidebar-text">專案</span>
+            </a>
+
+            <a href="camera.html" class="sidebar-item active" onclick="navigateWithAnimation(event, this, 'camera.html')">
+                <svg class="sidebar-icon" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M17 10.5V7c0-.55-.45-1-1-1H4c-.55 0-1 .45-1 1v10c0 .55.45 1 1 1h12c.55 0 1-.45 1-1v-3.5l4 4v-11l-4 4z"/>
+                </svg>
+                <span class="sidebar-text">攝影機</span>
+            </a>
+
+            <a href="contact.html" class="sidebar-item" onclick="navigateWithAnimation(event, this, 'contact.html')">
+                <svg class="sidebar-icon" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M16 4c0-1.11.89-2 2-2s2 .89 2 2-.89 2-2 2-2-.89-2-2zm4 18v-6h2.5l-2.54-7.63A1.5 1.5 0 0 0 18.54 8H17c-.8 0-1.54.37-2.01 1l-2.41 3.19c-.32.42-.26 1.02.14 1.37l2.28 2v4.44h2zm-7.5-10.5c.83 0 1.5-.67 1.5-1.5s-.67-1.5-1.5-1.5S11 9.17 11 10s.67 1.5 1.5 1.5zM5.5 6c1.11 0 2-.89 2-2s-.89-2-2-2-2 .89-2 2 .89 2 2 2zm2 16v-7H9V9c0-1.1-.9-2-2-2H4c-1.1 0-2 .9-2 2v6h1.5v7h4z"/>
+                </svg>
+                <span class="sidebar-text">聯絡人</span>
+            </a>
+
+            <a href="set.html" class="sidebar-item" onclick="navigateWithAnimation(event, this, 'set.html')">
+                <svg class="sidebar-icon" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/>
+                </svg>
+                <span class="sidebar-text">異常通知查詢</span>
+            </a>
+        </div>
+    </div>
+
+    <div class="content" id="content">
+        <div class="page-header">
+            <div><strong>IP CAMERA</strong></div>
+            <div class="tabs">
+                <!-- <button class="tab active" onclick="showTab('streaming')">即時串流</button> -->
+                <button class="tab" onclick="showTab('manage')">管理攝影機</button>
+                <button class="tab" onclick="showTab('add')">新增攝影機</button>
+            </div>
+        </div>
+
+        <!-- <section id="streaming"> -->
+            <!-- <div id="streamingLoading" class="loading">讀取中...</div> -->
+            <!-- <div id="cameraGrid" class="camera-grid hidden"></div> -->
+        <!-- </section> -->
+
+        <section id="manage" class="hidden">
+            <div id="manageLoading" class="loading">讀取中...</div>
+            <div id="cameraList" class="camera-list hidden"></div>
+        </section>
+
+        <!-- 新增攝影機 -->
+        <section id="add" class="hidden">
+            <form id="cameraForm">
+                <h2>新增攝影機</h2>
+                <input type="text" id="cameraName" placeholder="攝影機名稱" required>
+                <input type="text" id="deviceBrand" placeholder="品牌" required>
+                <input type="text" id="deviceModel" placeholder="型號" required>
+                <input type="text" id="ipAddress" placeholder="IP 位址" required>
+                <input type="text" id="cameraUsername" placeholder="帳號" required>
+                <input type="password" id="cameraPassword" placeholder="密碼" required>
+                <input type="text" id="rtspUrl" placeholder="RTSP 串流網址" required>
+                <button type="submit">儲存</button>
+            </form>
+        </section>
+
+        <!-- 攝影機詳情（可修改與刪除） -->
+        <section id="detail" class="hidden">
+            <div class="camera-item">
+                <h2>攝影機詳情</h2>
+                <input class="edit-input" id="editCameraName" placeholder="名稱">
+                <input class="edit-input" id="editDeviceBrand" placeholder="品牌">
+                <input class="edit-input" id="editDeviceModel" placeholder="型號">
+                <input class="edit-input" id="editIpAddress" placeholder="IP 位址">
+                <input class="edit-input" id="editCameraUsername" placeholder="帳號">
+                <input class="edit-input" id="editCameraPassword" placeholder="密碼">
+                <input class="edit-input" id="editRtspUrl" placeholder="RTSP 串流網址">
+                <div style="margin-top: 15px;">
+                    <button onclick="saveCameraEdit()">💾 儲存</button>
+                    <button class="btn-delete" onclick="deleteCamera()">🗑 刪除</button>
+                    <button onclick="showTab('manage')">⬅ 返回</button>
+                </div>
+            </div>
+        </section>
+    </div>
+
+    <script>
+        const API_BASE = 'http://210.240.202.108:5000';
+        //const API_BASE = 'http://aimonitor.dpdns.org';
+        let currentCameraId = null;  // 暫存當前攝影機 ID
+
+        // 側邊選單控制
+        function toggleSidebar() {
+            const sidebar = document.getElementById('sidebar');
+            const overlay = document.querySelector('.sidebar-overlay');
+            const hamburger = document.querySelector('.hamburger-menu');
+            const content = document.getElementById('content');
+            
+            sidebar.classList.toggle('active');
+            overlay.classList.toggle('active');
+            hamburger.classList.toggle('active');
+            
+            if (window.innerWidth > 768) {
+                content.classList.toggle('sidebar-open');
+            }
+        }
+
+        function closeSidebar() {
+            const sidebar = document.getElementById('sidebar');
+            const overlay = document.querySelector('.sidebar-overlay');
+            const hamburger = document.querySelector('.hamburger-menu');
+            const content = document.getElementById('content');
+            
+            sidebar.classList.remove('active');
+            overlay.classList.remove('active');
+            hamburger.classList.remove('active');
+            content.classList.remove('sidebar-open');
+        }
+
+        // 導航動畫
+        function navigateWithAnimation(event, element, url) {
+            event.preventDefault();
+            
+            // 移除其他項目的 active 狀態
+            document.querySelectorAll('.sidebar-item').forEach(item => {
+                item.classList.remove('active');
+            });
+            
+            // 添加當前項目的 active 狀態
+            element.classList.add('active');
+            
+            // 延遲跳轉
+            setTimeout(() => {
+                window.location.href = url;
+            }, 300);
+        }
+
+        function loadHeader() {
+            console.log('Header loaded');
+        }
+
+        /*=========================== 新增攝影機 =============================*/
+        const cameraForm = document.getElementById('cameraForm');
+
+        const cameraError = document.createElement('div');
+        cameraError.style.color = 'red';
+        cameraError.style.marginTop = '10px';
+        cameraForm.insertBefore(cameraError, cameraForm.firstChild);
+
+        const successMessage = document.createElement('div');
+        successMessage.style.color = 'green';
+        successMessage.style.marginTop = '10px';
+        successMessage.style.display = 'none';
+        successMessage.textContent = '✅ 攝影機新增成功！';
+        cameraForm.insertBefore(successMessage, cameraForm.firstChild);
+
+function showTab(tabId) {
+    if (tabId === 'detail') {
+        document.querySelectorAll('.content section').forEach(section => section.classList.add('hidden'));
+        document.getElementById('detail').classList.remove('hidden');
+        return;
+    }
+
+    const tabButtons = { 'streaming': 0, 'manage': 1, 'add': 2 };
+    const index = tabButtons[tabId];
+    if (index === undefined) {
+        console.error(`❌ 無效的 tabId: ${tabId}`);
+        return;
+    }
+
+    document.querySelectorAll('.content section').forEach(section => section.classList.add('hidden'));
+    document.querySelectorAll('.tab').forEach(tab => tab.classList.remove('active'));
+    document.getElementById(tabId).classList.remove('hidden');
+    document.querySelectorAll('.tab')[index].classList.add('active');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+
+    if (tabId === 'add') {
+        cameraError.textContent = '';
+        successMessage.style.display = 'none';
+        cameraForm.reset();
+    }
+}
+
+
+        cameraForm.addEventListener('submit', function (e) {
+            e.preventDefault();
+            cameraError.textContent = '';
+            successMessage.style.display = 'none';
+
+            const token = localStorage.getItem('jwt');
+            if (!token) {
+                cameraError.textContent = '❌ 未登入，請先登入後再操作';
+                return;
+            }
+
+            const data = {
+                token,
+                camera_name: cameraForm.cameraName.value.trim(),
+                brand: cameraForm.deviceBrand.value.trim(),
+                model: cameraForm.deviceModel.value.trim(),
+                ip_address: cameraForm.ipAddress.value.trim(),
+                camera_username: cameraForm.cameraUsername.value.trim(),
+                camera_password: cameraForm.cameraPassword.value.trim(),
+                rtsp_url: cameraForm.rtspUrl.value.trim()
+            };
+
+            if (Object.values(data).some(v => !v)) {
+                cameraError.textContent = '⚠️ 請完整填寫所有欄位';
+                return;
+            }
+
+            /*=========================== fetch /camera/create api =============================*/
+            fetch(`${API_BASE}/camera/create`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(data)
+            })
+                .then(response => {
+                    if (response.status === 200) {
+                        successMessage.style.display = 'block';
+                        setTimeout(() => {
+                            cameraForm.reset();
+                            successMessage.style.display = 'none';
+                        }, 1500);
+                    } else {
+                        cameraError.textContent = response.status === 401 ? '❌ 未授權' :
+                            response.status === 400 ? '⚠️ 資料不完整' :
+                                '⚠️ 新增失敗';
+                    }
+                })
+                .catch(() => cameraError.textContent = '⚠️ 無法連線伺服器');
+        });
+
+        /*=========================== 顯示管理列表 =============================*/
+        document.querySelector('.tab:nth-child(2)').addEventListener('click', () => {
+            const token = localStorage.getItem('jwt');
+            if (!token) {
+                document.getElementById('manageLoading').textContent = '❌ 未登入，請先登入';
+                return;
+            }
+
+            document.getElementById('manageLoading').classList.remove('hidden');
+            document.getElementById('cameraList').classList.add('hidden');
+            document.getElementById('cameraList').innerHTML = '';
+
+            /*=========================== fetch /camera api =============================*/
+            fetch(`${API_BASE}/camera`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ token })
+            })
+                .then(res => res.json())
+                .then(data => {
+                    console.log('camera list data:', data);
+
+                    document.getElementById('manageLoading').classList.add('hidden');
+                    const list = document.getElementById('cameraList');
+                    if (data.cameras) {
+                        list.classList.remove('hidden');
+                        data.cameras.forEach(cam => {
+                            const item = document.createElement('div');
+                            item.className = 'camera-manage-item';
+                            item.innerHTML = `
+                <div><strong>${cam.camera_name}</strong> (${cam.brand} ${cam.model})</div>
+                <div><button class="btn-show" onclick='showCameraDetail(${JSON.stringify(cam)})'>查看</button></div>
+              `;
+                            list.appendChild(item);
+                        });
+                    } else {
+                        list.textContent = '⚠️ 無攝影機資料';
+                    }
+                })
+                .catch(() => document.getElementById('manageLoading').textContent = '⚠️ 載入失敗');
+        });
+
+        function showCameraDetail(cam) {
+            currentCameraId = cam.camera_id;
+            document.getElementById('editCameraName').value = cam.camera_name;
+            document.getElementById('editDeviceBrand').value = cam.brand;
+            document.getElementById('editDeviceModel').value = cam.model;
+            document.getElementById('editIpAddress').value = cam.ip_address;
+            document.getElementById('editCameraUsername').value = cam.camera_username;
+            document.getElementById('editCameraPassword').value = cam.camera_password;
+            document.getElementById('editRtspUrl').value = cam.rtsp_url;
+            showTab('detail');
+        }
+
+        function saveCameraEdit() {
+            const token = localStorage.getItem('jwt');
+            if (!token || !currentCameraId) return alert('❌ 未登入或資料錯誤');
+
+            const payload = {
+                token,
+                camera_id: currentCameraId,
+                camera_name: document.getElementById('editCameraName').value,
+                brand: document.getElementById('editDeviceBrand').value,
+                model: document.getElementById('editDeviceModel').value,
+                ip_address: document.getElementById('editIpAddress').value,
+                camera_username: document.getElementById('editCameraUsername').value,
+                camera_password: document.getElementById('editCameraPassword').value,
+                rtsp_url: document.getElementById('editRtspUrl').value
+            };
+
+            /*=========================== fetch /camera/update api =============================*/
+            fetch(`${API_BASE}/camera/update`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            })
+                .then(res => {
+                    if (res.status === 200) {
+                        alert('✅ 修改成功');
+                        showTab('manage');
+                    } else {
+                        alert('⚠️ 修改失敗');
+                    }
+                })
+                .catch(() => alert('⚠️ 無法連線伺服器'));
+        }
+
+        function deleteCamera() {
+            const token = localStorage.getItem('jwt');
+            if (!token || !currentCameraId) return alert('❌ 未登入或資料錯誤');
+            if (!confirm('確定要刪除這支攝影機嗎？')) return;
+
+            /*=========================== fetch /camera/delete api =============================*/
+            fetch(`${API_BASE}/camera/delete`, {
+                method: 'DELETE',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ token, camera_id: currentCameraId })
+            })
+                .then(res => {
+                    if (res.status === 200) {
+                        alert('🗑 已刪除');
+                        location.reload();
+                    } else {
+                        alert('⚠️ 刪除失敗');
+                    }
+                })
+                .catch(() => alert('⚠️ 無法連線伺服器'));
+        }
+
+        // 點擊外部關閉側邊選單
+        document.addEventListener('click', function(event) {
+            const sidebar = document.getElementById('sidebar');
+            const hamburger = document.querySelector('.hamburger-menu');
+            
+            if (!sidebar.contains(event.target) && !hamburger.contains(event.target)) {
+                if (sidebar.classList.contains('active')) {
+                    closeSidebar();
+                }
+            }
+        });
+
+        window.onload = function() {
+            loadHeader();
+        };
+    </script>
+</body>
+</html>

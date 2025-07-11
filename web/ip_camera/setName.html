@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>輸入姓名</title>
+  <style>
+    /* 🔸 背景影片樣式 */
+    #videoElement {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      z-index: -1;
+    }
+
+    body {
+      margin: 0;
+      font-family: 'Inter', sans-serif;
+      color: #1e1e1e;
+      display: flex;
+      justify-content: center;
+      align-items: flex-start;
+      height: 100vh;
+      overflow: hidden;
+      position: relative;
+    }
+
+    /* ✅ 錯誤縮小放大動畫 */
+    @keyframes shrinkAndExpand {
+      0% {
+        transform: scale(1);
+      }
+      50% {
+        transform: scale(0.8);
+      }
+      100% {
+        transform: scale(1);
+      }
+    }
+
+    /* ✅ 成功縮小動畫 */
+    @keyframes shrinkAndRedirect {
+      0% {
+        transform: scale(1);
+      }
+      50% {
+        transform: scale(0.8);
+      }
+      100% {
+        transform: scale(0);
+      }
+    }
+
+    .container {
+      width: 300px;
+      height: 300px;
+      padding: 20px;
+      background-color: rgba(255, 255, 255, 0.3);
+      border-radius: 50%;
+      box-shadow: 0 0 10px rgba(0, 0, 0, 0.3);
+      position: relative;
+      z-index: 1;
+      margin-top: 25vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+
+      animation: fadeInZoom 0.6s ease-out;
+    }
+
+    /* 淡入縮放效果 */
+    @keyframes fadeInZoom {
+      0% {
+        opacity: 0;
+        transform: scale(0.8);
+      }
+      100% {
+        opacity: 1;
+        transform: scale(1);
+      }
+    }
+
+    h2 {
+      font-size: clamp(18px, 4vw, 24px);
+      margin-bottom: 16px;
+      color: #000000;
+    }
+
+    .input-group {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 12px;
+      width: 100%;
+    }
+
+    input[type="text"] {
+      width: 80%;
+      padding: 12px 16px;
+      font-size: 1rem;
+      border: 1px;
+      border-radius: 5px;
+      box-sizing: border-box;
+      color: #000000;
+      background-color: #ffffff;
+    }
+
+    button {
+      width: 80%;
+      padding: 12px 20px;
+      font-size: 1rem;
+      background-color: #ffffff;
+      color: #000000;
+      border: 10px;
+      border-radius: 5px;
+      cursor: pointer;
+      white-space: nowrap;
+	  background-color: rgba(255, 255, 255, 0.8);
+    }
+
+    button:hover {
+      background-color: #000000;
+      color: #ffffff;
+	  background-color: rgba(0, 0, 0, 0.8);
+    }
+
+    .error-msg {
+      display: none;
+      color: #d32f2f;
+      font-size: 1rem;
+      margin-top: 8px;
+      text-align: center;
+    }
+
+    @media (max-width: 480px) {
+      .container {
+        width: 240px;
+        height: 240px;
+        padding: 16px;
+        margin-top: 20vh;
+      }
+
+      h2 {
+        font-size: 1rem;
+      }
+
+      input[type="text"],
+      button {
+        width: 90%;
+        font-size: 0.95rem;
+      }
+
+      .error-msg {
+        font-size: 0.9rem;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <video autoplay muted loop id="videoElement">
+    <source src="4991088-uhd_3840_2160_30fps.mp4" type="video/mp4" />
+  </video>
+
+  <div class="container" id="container">
+    <h2>請輸入您的名字</h2>
+    <div class="input-group">
+      <input type="text" name="name" id="nameInput" placeholder="輸入姓名" />
+      <button id="btn-toMain" type="submit" onclick="submitForm()">確認</button>
+    </div>
+    <div id="errorMsg" class="error-msg"></div>
+  </div>
+
+  <script>
+	const API_BASE = 'http://210.240.202.108:5000';
+    //const API_BASE = 'http://aimonitor.dpdns.org';
+
+    function submitForm() {
+      const username = document.getElementById('nameInput').value.trim();
+      const errorMsg = document.getElementById('errorMsg');
+      const token = localStorage.getItem('jwt');
+      const container = document.getElementById('container');
+
+      if (!username) {
+        // 當沒有輸入名字時，顯示錯誤並執行縮小再放大的動畫
+        errorMsg.textContent = "請輸入姓名";
+        errorMsg.style.display = "block";
+        container.style.animation = "shrinkAndExpand 0.6s ease-out"; // 觸發動畫
+        return;
+      }
+
+      fetch(`${API_BASE}/set_name`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ username, token })
+      })
+      .then(response => response.json()
+		.then(data => ({ status: response.status, body: data })
+		)
+	  )
+      .then(res => {
+        const { status, body } = res;
+
+        if (status === 200) {
+          localStorage.setItem('name', username);
+          if (body.token) localStorage.setItem('jwt', body.token);
+
+          // 當名字輸入正確，先縮小容器，再跳轉頁面
+          container.style.animation = "shrinkAndRedirect 1s forwards"; // 觸發縮小動畫
+
+          // 跳轉至主頁面
+          setTimeout(() => {
+            window.location.href = '/main.html';
+          }, 2000); // 延遲跳轉，等動畫結束
+        } else {
+          errorMsg.textContent = body.error || "發生錯誤";
+          errorMsg.style.display = "block";
+          container.style.animation = "shrinkAndExpand 0.6s ease-out"; // 觸發錯誤動畫
+        }
+      })
+      .catch(error => {
+        console.error('錯誤:', error);
+        errorMsg.textContent = "伺服器錯誤，請稍後再試";
+        errorMsg.style.display = "block";
+        container.style.animation = "shrinkAndExpand 0.6s ease-out"; // 觸發錯誤動畫
+      });
+    }
+
+    document.addEventListener("DOMContentLoaded", function () {
+      const urlParams = new URLSearchParams(window.location.search);
+      const token = urlParams.get('token');
+      if (token) {
+        localStorage.setItem('jwt', token);
+        console.log("JWT Token Stored:", token);
+      }
+
+      // 自動聚焦
+      document.getElementById('nameInput').focus();
+    });
+  </script>
+
+</body>
+</html>

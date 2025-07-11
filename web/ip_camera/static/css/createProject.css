@@ -1,0 +1,692 @@
+html, body {
+    margin: 0;
+    padding: 0;
+    background: #ffffff;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+    overflow-x: hidden;
+    min-height: 100vh;
+    /* 隱藏滾動條但保持滾動功能 */
+    scrollbar-width: none; /* Firefox */
+    -ms-overflow-style: none; /* IE and Edge */
+}
+
+html::-webkit-scrollbar,
+body::-webkit-scrollbar {
+    display: none; /* Chrome, Safari, Opera */
+}
+
+.main-content {
+    min-height: 100vh;
+    position: relative;
+    padding-top: 80px;
+}
+
+.container {
+    position: relative;
+    top: 80px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 700px;
+    text-align: center;
+}
+
+.step-header {
+    background: white;
+    color: black;
+    padding: 20px;
+    border-radius: 16px 16px 0 0;
+    margin-bottom: 0;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    border: 2px solid #f0f0f0;
+}
+
+.step-header h1 {
+    margin: 0;
+    font-size: 28px;
+    font-weight: 700;
+    color: black;
+}
+
+.step-header p {
+    margin: 8px 0 0 0;
+    opacity: 0.7;
+    font-size: 16px;
+    color: #666;
+}
+
+.step {
+    display: none;
+    text-align: left;
+    background: white;
+    padding: 32px;
+    border-radius: 0 0 12px 12px;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+    border: 2px solid #f0f0f0;
+    border-top: none;
+    min-height: 400px;
+    position: relative;
+}
+
+.step.active {
+    display: block;
+}
+
+.step h2 {
+    font-size: 24px;
+    margin-bottom: 24px;
+    color: black;
+    font-weight: 600;
+}
+
+.form-group {
+    margin-bottom: 24px;
+}
+
+.form-group label {
+    display: block;
+    margin-bottom: 8px;
+    font-weight: 600;
+    color: black;
+    font-size: 16px;
+}
+
+.form-group input[type="text"],
+.form-group input[type="datetime-local"],
+.form-group input[type="time"],
+.form-group select,
+.form-group textarea {
+    width: 100%;
+    padding: 12px 16px;
+    border: 2px solid #e0e0e0;
+    border-radius: 8px;
+    font-size: 16px;
+    transition: all 0.3s ease;
+    background-color: #f8f9fa;
+    box-sizing: border-box;
+    color: #666;
+}
+
+.form-group input:focus,
+.form-group select:focus,
+.form-group textarea:focus {
+    border-color: #666;
+    box-shadow: 0 0 0 3px rgba(0, 0, 0, 0.05);
+    outline: none;
+    background-color: white;
+}
+
+.checkbox-group {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 12px;
+    margin-top: 12px;
+}
+
+.checkbox-item {
+    display: flex;
+    align-items: flex-start;
+    padding: 16px;
+    border: 2px solid #e0e0e0;
+    border-radius: 8px;
+    transition: all 0.3s ease;
+    background: white;
+}
+
+.checkbox-item:hover {
+    border-color: #666;
+    background: #f8f9fa;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.checkbox-item input[type="checkbox"] {
+    margin-right: 12px;
+    margin-top: 2px;
+    transform: scale(1.2);
+    accent-color: black;
+}
+
+.checkbox-item input[type="checkbox"]:checked + .checkbox-content {
+    color: black;
+}
+
+.checkbox-content h4 {
+    margin: 0 0 4px 0;
+    font-size: 16px;
+    font-weight: 600;
+    color: black;
+}
+
+.checkbox-content p {
+    margin: 0;
+    font-size: 14px;
+    color: #666;
+}
+
+.time-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+}
+
+/* 導航按鈕定位 - 第一頁只顯示右邊，其他頁面顯示兩邊 */
+.navigation-buttons {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    width: calc(100% + 200px);
+    left: -100px;
+    display: flex;
+    justify-content: space-between;
+    pointer-events: none;
+    z-index: 10;
+}
+
+/* 桌面版導航按鈕樣式 */
+@media (min-width: 769px) {
+    .navigation-buttons {
+        position: absolute;
+        top: 50%;
+        transform: translateY(-50%);
+        width: calc(100% + 200px);
+        left: -100px;
+        display: flex;
+        justify-content: space-between;
+        pointer-events: none;
+        z-index: 10;
+    }
+}
+
+.nav-button {
+    background: black;
+    border: none;
+    cursor: pointer;
+    padding: 0;
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 50px;
+    height: 50px;
+    border-radius: 50%;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
+    pointer-events: auto;
+    position: relative;
+    overflow: hidden;
+}
+
+.nav-button::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.2) 0%, rgba(255, 255, 255, 0.1) 100%);
+    border-radius: 50%;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+.nav-button:hover::before {
+    opacity: 1;
+}
+
+.nav-button:hover {
+    transform: scale(1.1);
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.4);
+}
+
+.nav-button:disabled {
+    opacity: 0.3;
+    cursor: not-allowed;
+    background: #ccc;
+}
+
+.nav-button:disabled:hover {
+    transform: none;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
+}
+
+.nav-button svg {
+    width: 20px;
+    height: 20px;
+    color: white;
+    z-index: 1;
+    position: relative;
+}
+
+/* 進度條樣式 */
+.progress-container {
+    position: fixed;
+    bottom: 30px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 5;
+}
+
+/* 手機版進度條調整 */
+@media (max-width: 768px) {
+    .progress-container {
+        position: absolute;
+        bottom: -120px;
+        left: 50%;
+        transform: translateX(-50%);
+        width: calc(100% - 40px);
+        max-width: 500px;
+    }
+    
+    .container {
+        width: 85%;
+        top: 60px;
+        margin-bottom: 200px; /* 增加底部空間給進度條 */
+        transform: translateX(-50%) scale(0.95);
+        position: relative; /* 確保進度條相對定位有效 */
+    }
+    
+    .progress-bar {
+        width: 100%;
+        height: 55px; /* 原35px + 20px */
+        margin: 0 auto;
+    }
+
+    .progress-text {
+        font-size: 16px;
+        font-weight: 700;
+    }
+}
+
+@media (max-width: 480px) {
+    .progress-container {
+        bottom: -120px;
+        width: calc(100% - 30px);
+        max-width: 400px;
+    }
+
+    .container {
+        width: 85%;
+        top: 30px;
+        margin-bottom: 200px;
+        transform: translateX(-50%) scale(0.9);
+        position: relative;
+    }
+    
+    .progress-bar {
+        width: 100%;
+        height: 55px; /* 原35px + 20px */
+    }
+
+    .progress-text {
+        font-size: 15px;
+    }
+}
+
+.progress-bar {
+    width: 600px;
+    height: 35px;
+    background: linear-gradient(135deg, #f0f0f0 0%, #e0e0e0 100%);
+    border-radius: 20px;
+    box-shadow: 0px 4px 15px rgba(0, 0, 0, 0.1);
+    position: relative;
+    overflow: hidden;
+    border: 2px solid #e0e0e0;
+}
+
+.progress-bar-fill {
+    height: 100%;
+    background: linear-gradient(135deg, #333 0%, #000 50%, #333 100%);
+    border-radius: 20px;
+    transition: width 0.5s ease;
+    width: 0%;
+    position: relative;
+    overflow: hidden;
+}
+
+/* 泡泡動畫 */
+.progress-bar-fill::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-image: 
+        radial-gradient(circle at 20% 50%, rgba(255, 255, 255, 0.3) 2px, transparent 2px),
+        radial-gradient(circle at 40% 20%, rgba(255, 255, 255, 0.2) 1px, transparent 1px),
+        radial-gradient(circle at 60% 80%, rgba(255, 255, 255, 0.25) 1.5px, transparent 1.5px),
+        radial-gradient(circle at 80% 30%, rgba(255, 255, 255, 0.2) 1px, transparent 1px),
+        radial-gradient(circle at 90% 70%, rgba(255, 255, 255, 0.3) 2px, transparent 2px);
+    background-size: 50px 50px, 30px 30px, 40px 40px, 35px 35px, 45px 45px;
+    animation: bubbles 3s linear infinite;
+}
+
+@keyframes bubbles {
+    0% {
+        transform: translateX(-100px);
+    }
+    100% {
+        transform: translateX(100px);
+    }
+}
+
+.progress-text {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    color: white;
+    font-weight: 600;
+    font-size: 14px;
+    z-index: 1;
+    text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.5);
+}
+
+.submit-section {
+    text-align: center;
+    padding: 40px 0;
+}
+
+.submit-button {
+    background: black;
+    color: white;
+    border: none;
+    padding: 16px 32px;
+    border-radius: 50px;
+    font-size: 18px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
+    position: relative;
+    overflow: hidden;
+}
+
+.submit-button::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+    transition: left 0.5s;
+}
+
+.submit-button:hover::before {
+    left: 100%;
+}
+
+.submit-button:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+}
+
+.preview-section {
+    background: white;
+    border-radius: 12px;
+    padding: 24px;
+    margin-top: 24px;
+    border: 2px solid #f0f0f0;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+}
+
+.preview-item {
+    display: flex;
+    justify-content: space-between;
+    padding: 8px 0;
+    border-bottom: 1px solid #e0e0e0;
+}
+
+.preview-item:last-child {
+    border-bottom: none;
+}
+
+.preview-label {
+    font-weight: 600;
+    color: black;
+}
+
+.preview-value {
+    color: #666;
+}
+
+/* 火箭和監視器爆炸動畫 */
+.rocket-animation {
+    position: fixed;
+    bottom: 50%;
+    left: 50%;
+    transform: translateX(-50%);
+    font-size: 60px;
+    z-index: 1000;
+    opacity: 0;
+    pointer-events: none;
+}
+
+.rocket-launch {
+    animation: rocketLaunch 2s ease-out forwards;
+}
+
+@keyframes rocketLaunch {
+    0% {
+        opacity: 1;
+        transform: translateX(-50%) translateY(0) rotate(0deg);
+    }
+    100% {
+        opacity: 0;
+        transform: translateX(-50%) translateY(-300px) rotate(360deg);
+    }
+}
+
+.camera-explosion {
+    position: fixed;
+    top: 20%;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 1000;
+    pointer-events: none;
+}
+
+.camera-icon {
+    position: absolute;
+    font-size: 30px;
+    opacity: 0;
+    color: black;
+}
+
+.camera-explode {
+    animation: cameraExplode 3s ease-out forwards;
+}
+
+@keyframes cameraExplode {
+    0% {
+        opacity: 1;
+        transform: translate(0, 0) scale(0.5);
+    }
+    50% {
+        opacity: 1;
+        transform: translate(var(--x), var(--y)) scale(1);
+    }
+    100% {
+        opacity: 0;
+        transform: translate(var(--x), var(--y)) scale(0.5);
+    }
+}
+
+/* 響應式設計 */
+@media (max-width: 768px) {
+    .container {
+        width: 85%;
+        top: 60px;
+        margin-bottom: 200px; /* 增加底部空間給進度條 */
+        transform: translateX(-50%) scale(0.95);
+        position: relative; /* 確保進度條相對定位有效 */
+    }
+
+    .progress-bar {
+        width: 100%;
+    }
+
+    .progress-container {
+        position: absolute;
+        bottom: -120px;
+        left: 50%;
+        transform: translateX(-50%);
+        width: calc(100% - 40px);
+        max-width: 500px;
+    }
+
+    /* 手機版導航按鈕重新定位 */
+    .navigation-buttons {
+        position: static;
+        width: 100%;
+        left: auto;
+        transform: none;
+        justify-content: center;
+        gap: 40px;
+        margin-top: 30px;
+        margin-bottom: 20px;
+        pointer-events: auto;
+    }
+
+    .nav-button {
+        width: 50px;
+        height: 50px;
+        position: relative;
+    }
+
+    .nav-button svg {
+        width: 20px;
+        height: 20px;
+    }
+
+    .checkbox-group {
+        grid-template-columns: 1fr;
+    }
+
+    .time-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .step {
+        padding: 24px;
+        min-height: 350px;
+    }
+
+    .step-header h1 {
+        font-size: 24px;
+    }
+
+    .step-header p {
+        font-size: 14px;
+    }
+}
+
+@media (max-width: 480px) {
+    .container {
+        width: 85%;
+        top: 30px;
+        margin-bottom: 200px;
+        transform: translateX(-50%) scale(0.9);
+        position: relative;
+    }
+    
+    .step {
+        padding: 20px;
+        min-height: 320px;
+    }
+    
+    .progress-bar {
+        width: 85%;
+        height: 30px;
+    }
+
+    .progress-text {
+        font-size: 12px;
+    }
+    
+    .navigation-buttons {
+        gap: 30px;
+        margin-top: 25px;
+    }
+    
+    .nav-button {
+        width: 45px;
+        height: 45px;
+    }
+
+    .nav-button svg {
+        width: 18px;
+        height: 18px;
+    }
+
+    .step-header h1 {
+        font-size: 22px;
+    }
+
+    .step-header p {
+        font-size: 13px;
+    }
+
+    .form-group label {
+        font-size: 15px;
+    }
+
+    .form-group input,
+    .form-group select,
+    .form-group textarea {
+        font-size: 15px;
+        padding: 10px 14px;
+    }
+}
+
+@media (max-height: 800px) {
+    .container {
+        top: 30px;
+    }
+    
+    .step {
+        min-height: 300px;
+    }
+    
+    .progress-container {
+        bottom: 10px;
+    }
+}
+
+/* 美化滾動條 */
+* {
+    scrollbar-width: none; /* Firefox */
+    -ms-overflow-style: none; /* IE and Edge */
+}
+
+*::-webkit-scrollbar {
+    display: none; /* Chrome, Safari, Opera */
+}
+
+#cameraInfo {
+    padding: 16px; 
+    background: white; 
+    border-radius: 8px; 
+    color: #666; 
+    border: 2px solid #f0f0f0;
+}
+
+.step h2 {
+    color: black;
+}
+
+.form-group label {
+    color: black;
+}
+
+.checkbox-content h4 {
+    color: black;
+}
+
+.preview-label {
+    color: black;
+}
+
+.preview-value {
+    color: #666;
+}

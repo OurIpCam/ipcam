@@ -1,0 +1,1005 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>聯絡人管理 - ip camera</title>
+
+<script src="/static/js/header.js"></script>
+<link rel="stylesheet" href="/static/css/header.css">
+</head>
+<body>
+<style>
+    body {
+        margin: 0;
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+        background: #ffffff;
+        color: #191919;
+        line-height: 1.6;
+        padding-top: 70px;
+        scrollbar-width: none;
+        -ms-overflow-style: none;
+    }
+
+    body::-webkit-scrollbar {
+        display: none;
+    }
+
+    /* === 頁首固定長條 === */
+    .header-bar {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 70px;
+        background-color: #000;
+        color: white;
+        padding: 0 30px;
+        z-index: 100;
+        box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+        transition: all 0.3s ease;
+        display: flex;
+        align-items: center;
+    }
+
+    /* === 漢堡選單按鈕 === */
+    .hamburger-menu {
+        position: fixed;
+        top: 15px;
+        left: 15px;
+        width: 40px;
+        height: 40px;
+        background: rgba(255, 255, 255, 0.1);
+        border: none;
+        border-radius: 8px;
+        cursor: pointer;
+        z-index: 101;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        gap: 4px;
+        transition: all 0.3s ease;
+    }
+
+    .hamburger-menu:hover {
+        background: rgba(255, 255, 255, 0.2);
+    }
+
+    .hamburger-line {
+        width: 20px;
+        height: 2px;
+        background: white;
+        transition: all 0.3s ease;
+    }
+
+    .hamburger-menu.active .hamburger-line:nth-child(1) {
+        transform: rotate(45deg) translate(5px, 5px);
+    }
+
+    .hamburger-menu.active .hamburger-line:nth-child(2) {
+        opacity: 0;
+    }
+
+    .hamburger-menu.active .hamburger-line:nth-child(3) {
+        transform: rotate(-45deg) translate(7px, -6px);
+    }
+
+    /* === 側邊選單 === */
+    .sidebar {
+        position: fixed;
+        top: 70px;
+        left: -280px;
+        width: 280px;
+        height: calc(100vh - 70px);
+        background-color: #ffffff;
+        box-shadow: 2px 0 10px rgba(0, 0, 0, 0.1);
+        z-index: 50;
+        transition: left 0.3s ease;
+        border-right: 1px solid #f0f0f0;
+    }
+
+    .sidebar.active {
+        left: 0;
+    }
+
+    .sidebar-overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0, 0, 0, 0.5);
+        z-index: 40;
+        opacity: 0;
+        visibility: hidden;
+        transition: all 0.3s ease;
+    }
+
+    .sidebar-overlay.active {
+        opacity: 1;
+        visibility: visible;
+    }
+
+    .sidebar-content {
+        padding: 30px 0;
+    }
+
+    .sidebar-item {
+        display: flex;
+        align-items: center;
+        padding: 15px 30px;
+        text-decoration: none;
+        color: #333;
+        transition: all 0.3s ease;
+        border-left: 4px solid transparent;
+    }
+
+    .sidebar-item:hover {
+        background-color: #f8f9fa;
+        border-left-color: #000;
+        color: #000;
+    }
+
+    .sidebar-item.active {
+        background-color: #f0f0f0;
+        border-left-color: #000;
+        color: #000;
+    }
+
+    .sidebar-icon {
+        width: 24px;
+        height: 24px;
+        margin-right: 15px;
+        flex-shrink: 0;
+    }
+
+    .sidebar-text {
+        font-size: 16px;
+        font-weight: 500;
+    }
+
+    /* === 新增：置中圖片樣式 === */
+    .header-center-logo {
+        position: absolute;
+        left: 50%;
+        transform: translateX(-50%);
+        height: 100%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        pointer-events: none;
+    }
+
+    .header-center-logo img {
+        height: 25px;
+        object-fit: contain;
+        transition: filter 0.3s ease;
+    }
+
+    /* === 頁首：當滑鼠懸停時，變更頁首背景色和 logo 顏色 === */
+    .header-bar:hover {
+        background-color: white;
+        color: black;
+    }
+
+    .header-bar:hover .header-title {
+        color: black;
+    }
+
+    .header-bar:hover .hamburger-line {
+        background: black;
+    }
+
+    .header-bar:hover .header-center-logo img {
+        filter: brightness(0);
+    }
+
+    .main-content {
+        min-height: 100vh;
+        position: relative;
+        margin-left: 0;
+        padding: 40px;
+        transition: margin-left 0.3s ease;
+    }
+
+    .main-content.sidebar-open {
+        margin-left: 280px;
+    }
+
+    .container {
+        position: relative;
+        width: 100%;
+        max-width: 700px;
+        margin: 0 auto;
+        text-align: center;
+    }
+
+    .page-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 30px;
+        background: white;
+        padding: 20px 30px;
+        border-radius: 12px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        border: 2px solid #f0f0f0;
+    }
+
+    .page-title {
+        font-size: 28px;
+        font-weight: 700;
+        color: black;
+        margin: 0;
+    }
+
+    .add-contact-btn {
+        background: black;
+        color: white;
+        border: none;
+        padding: 12px 24px;
+        border-radius: 8px;
+        font-size: 16px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .add-contact-btn:hover {
+        background: #333;
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+    }
+
+    .contacts-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+        gap: 20px;
+    }
+
+    .contact-card {
+        background: white;
+        border-radius: 12px;
+        padding: 24px;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        border: 2px solid #f0f0f0;
+        transition: all 0.3s ease;
+        position: relative;
+    }
+
+    .contact-card:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 8px 24px rgba(0,0,0,0.15);
+        border-color: #e0e0e0;
+    }
+
+    .contact-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        margin-bottom: 16px;
+    }
+
+    .contact-name {
+        font-size: 20px;
+        font-weight: 700;
+        color: black;
+        margin: 0;
+    }
+
+    .contact-status {
+        padding: 4px 12px;
+        border-radius: 20px;
+        font-size: 12px;
+        font-weight: 600;
+        text-transform: uppercase;
+    }
+
+    .status-active {
+        background: #d4edda;
+        color: #155724;
+    }
+
+    .status-inactive {
+        background: #f8d7da;
+        color: #721c24;
+    }
+
+    .contact-info {
+        display: grid;
+        grid-template-columns: 1fr;
+        gap: 12px;
+        margin-bottom: 20px;
+    }
+
+    .info-item {
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+    }
+
+    .info-label {
+        font-size: 12px;
+        color: #666;
+        font-weight: 600;
+        text-transform: uppercase;
+    }
+
+    .info-value {
+        font-size: 14px;
+        color: black;
+        font-weight: 500;
+    }
+
+    .contact-actions {
+        display: flex;
+        gap: 8px;
+        margin-top: 20px;
+    }
+
+    .action-btn {
+        flex: 1;
+        padding: 8px 16px;
+        border: none;
+        border-radius: 6px;
+        font-size: 14px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        text-decoration: none;
+        text-align: center;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 6px;
+    }
+
+    .btn-edit {
+        background: #ffc107;
+        color: black;
+    }
+
+    .btn-edit:hover {
+        background: #e0a800;
+        transform: translateY(-1px);
+    }
+
+    .btn-delete {
+        background: #dc3545;
+        color: white;
+    }
+
+    .btn-delete:hover {
+        background: #c82333;
+        transform: translateY(-1px);
+    }
+
+    .btn-test {
+        background: #28a745;
+        color: white;
+    }
+
+    .btn-test:hover {
+        background: #218838;
+        transform: translateY(-1px);
+    }
+
+    .empty-state {
+        text-align: center;
+        padding: 60px 20px;
+        color: #666;
+    }
+
+    .empty-state h3 {
+        font-size: 24px;
+        margin-bottom: 12px;
+        color: black;
+    }
+
+    .empty-state p {
+        font-size: 16px;
+        margin-bottom: 24px;
+    }
+
+    .loading {
+        text-align: center;
+        padding: 40px;
+        color: #666;
+        font-size: 18px;
+    }
+
+    /* 新增聯絡人表單 */
+    .add-contact-form {
+        background: white;
+        border-radius: 12px;
+        padding: 24px;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        border: 2px solid #f0f0f0;
+        margin-bottom: 30px;
+        display: none;
+    }
+
+    .add-contact-form.active {
+        display: block;
+    }
+
+    .form-group {
+        margin-bottom: 20px;
+    }
+
+    .form-group label {
+        display: block;
+        margin-bottom: 8px;
+        font-weight: 600;
+        color: black;
+        font-size: 14px;
+    }
+
+    .form-group input,
+    .form-group select,
+    .form-group textarea {
+        width: 100%;
+        padding: 12px 16px;
+        border: 2px solid #e0e0e0;
+        border-radius: 8px;
+        font-size: 14px;
+        transition: all 0.3s ease;
+        background-color: #f8f9fa;
+        box-sizing: border-box;
+        color: #666;
+    }
+
+    .form-group input:focus,
+    .form-group select:focus,
+    .form-group textarea:focus {
+        border-color: #666;
+        box-shadow: 0 0 0 3px rgba(0, 0, 0, 0.05);
+        outline: none;
+        background-color: white;
+    }
+
+    .form-actions {
+        display: flex;
+        gap: 12px;
+        justify-content: flex-end;
+    }
+
+    .btn-cancel {
+        background: #6c757d;
+        color: white;
+        border: none;
+        padding: 10px 20px;
+        border-radius: 6px;
+        font-size: 14px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s ease;
+    }
+
+    .btn-cancel:hover {
+        background: #5a6268;
+    }
+
+    .btn-save {
+        background: black;
+        color: white;
+        border: none;
+        padding: 10px 20px;
+        border-radius: 6px;
+        font-size: 14px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s ease;
+    }
+
+    .btn-save:hover {
+        background: #333;
+    }
+
+    /* 響應式設計 */
+    @media (max-width: 768px) {
+        .main-content.sidebar-open {
+            margin-left: 0;
+        }
+
+        .sidebar {
+            width: 100%;
+            left: -100%;
+        }
+
+        .sidebar.active {
+            left: 0;
+        }
+
+        .main-content {
+            padding: 20px;
+        }
+
+        .page-header {
+            flex-direction: column;
+            gap: 15px;
+            align-items: stretch;
+            padding: 20px;
+        }
+
+        .page-title {
+            font-size: 24px;
+            text-align: center;
+        }
+
+        .contacts-grid {
+            grid-template-columns: 1fr;
+            gap: 15px;
+        }
+
+        .contact-card {
+            padding: 20px;
+        }
+
+        .contact-actions {
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        /* 修改header-bar在手機畫面的樣式 */
+        .header-bar {
+            padding: 0 15px;
+        }
+        
+        .hamburger-menu {
+            top: 15px;
+            left: 15px;
+        }
+        
+        .header-center-logo img {
+            height: 25px;
+        }
+    }
+
+    @media (max-width: 480px) {
+        .main-content {
+            padding: 15px;
+        }
+
+        .page-header {
+            padding: 15px;
+        }
+
+        .page-title {
+            font-size: 22px;
+        }
+
+        .contact-card {
+            padding: 16px;
+        }
+
+        .contact-name {
+            font-size: 18px;
+        }
+
+        .add-contact-btn {
+            padding: 10px 20px;
+            font-size: 14px;
+        }
+
+        /* 與index.html保持一致的header樣式 */
+        .header-bar {
+            height: 70px;
+        }
+        
+        .header-center-logo {
+            position: absolute;
+            left: 50%;
+            transform: translateX(-50%);
+            height: auto;
+            top: 30px;
+        }
+        
+        .header-center-logo img {
+            height: 15px;
+        }
+        
+        .hamburger-menu {
+            width: 40px;
+            height: 40px;
+            top: 15px;
+            left: 15px;
+        }
+        
+        body {
+            padding-top: 70px;
+        }
+    }
+</style>
+
+<div id="header-container"></div>
+
+<!-- 頁首長條 -->
+<header class="header-bar">
+    <!-- 漢堡選單按鈕 -->
+    <button class="hamburger-menu" onclick="toggleSidebar()">
+        <div class="hamburger-line"></div>
+        <div class="hamburger-line"></div>
+        <div class="hamburger-line"></div>
+    </button>
+
+    <!-- === 正中央圖片區塊 === -->
+    <div class="header-center-logo">
+        <img src="static/images/AI Monitor white.png" alt="中央Logo">
+    </div>
+</header>
+
+<!-- 側邊選單遮罩 -->
+<div class="sidebar-overlay" onclick="closeSidebar()"></div>
+
+<!-- 側邊選單 -->
+<div class="sidebar" id="sidebar">
+    <div class="sidebar-content">
+        <a href="main.html" class="sidebar-item" onclick="navigateWithAnimation(event, this, 'main.html')">
+            <svg class="sidebar-icon" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zM9 17H7v-7h2v7zm4 0h-2V7h2v10zm4 0h-2v-4h2v4z"/>
+            </svg>
+            <span class="sidebar-text">專案</span>
+        </a>
+
+        <a href="camera.html" class="sidebar-item" onclick="navigateWithAnimation(event, this, 'camera.html')">
+            <svg class="sidebar-icon" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M17 10.5V7c0-.55-.45-1-1-1H4c-.55 0-1 .45-1 1v10c0 .55.45 1 1 1h12c.55 0 1-.45 1-1v-3.5l4 4v-11l-4 4z"/>
+            </svg>
+            <span class="sidebar-text">攝影機</span>
+        </a>
+
+        <a href="contact.html" class="sidebar-item active" onclick="navigateWithAnimation(event, this, 'contact.html')">
+            <svg class="sidebar-icon" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M16 4c0-1.11.89-2 2-2s2 .89 2 2-.89 2-2 2-2-.89-2-2zm4 18v-6h2.5l-2.54-7.63A1.5 1.5 0 0 0 18.54 8H17c-.8 0-1.54.37-2.01 1l-2.41 3.19c-.32.42-.26 1.02.14 1.37l2.28 2v4.44h2zm-7.5-10.5c.83 0 1.5-.67 1.5-1.5s-.67-1.5-1.5-1.5S11 9.17 11 10s.67 1.5 1.5 1.5zM5.5 6c1.11 0 2-.89 2-2s-.89-2-2-2-2 .89-2 2 .89 2 2 2zm2 16v-7H9V9c0-1.1-.9-2-2-2H4c-1.1 0-2 .9-2 2v6h1.5v7h4z"/>
+            </svg>
+            <span class="sidebar-text">聯絡人</span>
+        </a>
+
+        <a href="set.html" class="sidebar-item" onclick="navigateWithAnimation(event, this, 'set.html')">
+            <svg class="sidebar-icon" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/>
+            </svg>
+            <span class="sidebar-text">異常通知查詢</span>
+        </a>
+    </div>
+</div>
+
+<div class="main-content" id="main-content">
+    <div class="container">
+        <div class="page-header">
+            <h1 class="page-title">聯絡人管理</h1>
+            <button class="add-contact-btn" onclick="showAddContactForm()">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/>
+                </svg>
+                新增聯絡人
+            </button>
+        </div>
+
+        <!-- 新增聯絡人表單 -->
+        <div class="add-contact-form" id="addContactForm">
+            <h3>新增聯絡人</h3>
+            <form id="contactForm">
+                <div class="form-group">
+                    <label for="contactName">聯絡人姓名 *</label>
+                    <input type="text" id="contactName" name="contact_name" placeholder="請輸入聯絡人姓名" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="contactLineId">User ID *</label>
+                    <div style="position: relative;">
+                        <input type="text" id="contactLineId" name="line_id" placeholder="請輸入User ID" required>
+                        <button type="button" id="contactID-Description" style="position: absolute; right: 10px; top: 50%; transform: translateY(-50%); background: #666; color: white; border: none; border-radius: 50%; width: 20px; height: 20px; font-size: 12px; cursor: pointer;">?</button>
+                    </div>
+                </div>
+
+                <div class="form-actions">
+                    <button type="button" class="btn-cancel" onclick="hideAddContactForm()">取消</button>
+                    <button type="submit" class="btn-save">儲存</button>
+                </div>
+            </form>
+        </div>
+
+        <div id="contactsContainer">
+            <div class="loading">載入中...</div>
+        </div>
+    </div>
+</div>
+
+<script>
+const API_BASE = 'http://210.240.202.108:5000';
+
+// Line ID 說明按鈕事件
+document.getElementById('contactID-Description').addEventListener('click', () => {
+    alert(`此欄位填寫該聯絡人的 user id（不是自己）。
+
+常見問題：如何獲取 User id？
+1. 加入 Line 官方帳號 (@id)
+2. Line 官方聊天室點選「獲取 User id」
+3. 其他人即可填入您的 User id 作為聯絡人`);
+});
+
+// 側邊選單控制
+function toggleSidebar() {
+    const sidebar = document.getElementById('sidebar');
+    const overlay = document.querySelector('.sidebar-overlay');
+    const hamburger = document.querySelector('.hamburger-menu');
+    const content = document.getElementById('main-content');
+    
+    sidebar.classList.toggle('active');
+    overlay.classList.toggle('active');
+    hamburger.classList.toggle('active');
+    
+    if (window.innerWidth > 768) {
+        content.classList.toggle('sidebar-open');
+    }
+}
+
+function closeSidebar() {
+    const sidebar = document.getElementById('sidebar');
+    const overlay = document.querySelector('.sidebar-overlay');
+    const hamburger = document.querySelector('.hamburger-menu');
+    const content = document.getElementById('main-content');
+    
+    sidebar.classList.remove('active');
+    overlay.classList.remove('active');
+    hamburger.classList.remove('active');
+    content.classList.remove('sidebar-open');
+}
+
+// 導航動畫
+function navigateWithAnimation(event, element, url) {
+    event.preventDefault();
+    document.querySelectorAll('.sidebar-item').forEach(item => {
+        item.classList.remove('active');
+    });
+    element.classList.add('active');
+    setTimeout(() => {
+        window.location.href = url;
+    }, 300);
+}
+
+function loadHeader() {
+    console.log('Header loaded');
+}
+
+// 顯示新增聯絡人表單
+function showAddContactForm() {
+    document.getElementById('addContactForm').classList.add('active');
+    document.getElementById('contactName').focus();
+}
+
+// 隱藏新增聯絡人表單
+function hideAddContactForm() {
+    document.getElementById('addContactForm').classList.remove('active');
+    document.getElementById('contactForm').reset();
+}
+
+// 載入聯絡人列表
+function loadContacts() {
+    const token = localStorage.getItem('jwt');
+    if (!token) {
+        document.getElementById('contactsContainer').innerHTML = `
+            <div class="empty-state">
+                <h3>請先登入</h3>
+                <p>您需要登入才能查看聯絡人</p>
+            </div>
+        `;
+        return;
+    }
+
+    fetch(`${API_BASE}/contact`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ token })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.contacts && data.contacts.length > 0) {
+            renderContacts(data.contacts);
+        } else {
+            document.getElementById('contactsContainer').innerHTML = `
+                <div class="empty-state">
+                    <h3>尚無聯絡人</h3>
+                    <p>開始建立您的第一個聯絡人</p>
+                    <button class="add-contact-btn" onclick="showAddContactForm()">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                            <path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/>
+                        </svg>
+                        新增聯絡人
+                    </button>
+                </div>
+            `;
+        }
+    })
+    .catch(error => {
+        console.error('Error loading contacts:', error);
+        document.getElementById('contactsContainer').innerHTML = `
+            <div class="empty-state">
+                <h3>載入失敗</h3>
+                <p>無法載入聯絡人列表，請稍後再試</p>
+            </div>
+        `;
+    });
+}
+
+// 渲染聯絡人列表（已移除測試按鈕）
+function renderContacts(contacts) {
+    const container = document.getElementById('contactsContainer');
+    container.innerHTML = `
+        <div class="contacts-grid">
+            ${contacts.map(contact => `
+                <div class="contact-card">
+                    <div class="contact-header">
+                        <h3 class="contact-name">${contact.contact_name}</h3>
+
+                    </div>
+                    
+                    <div class="contact-info">
+                        <div class="info-item">
+                            <span class="info-label">User ID</span>
+                            <span class="info-value">${contact.contact_id}</span>
+                        </div>
+                    </div>
+                    
+                    <div class="contact-actions">
+                        <button class="action-btn btn-edit" onclick="editContact('${contact.contact_id}')">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+                                <path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/>
+                            </svg>
+                            編輯
+                        </button>
+                        <button class="action-btn btn-delete" onclick="deleteContact('${contact.contact_id}')">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+                                <path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/>
+                            </svg>
+                            刪除
+                        </button>
+                    </div>
+                </div>
+            `).join('')}
+        </div>
+    `;
+}
+
+// 新增聯絡人
+document.getElementById('contactForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    
+    const token = localStorage.getItem('jwt');
+    const formData = new FormData(this);
+    const contactData = {
+        token: token,
+        contact_name: formData.get('contact_name'),
+        contact_user_id: formData.get('line_id')
+    };
+
+    fetch(`${API_BASE}/contact/create`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(contactData)
+    })
+    .then(response => {
+        if (response.status === 200) {
+            hideAddContactForm();
+            loadContacts();
+            alert('聯絡人新增成功！');
+        } else if (response.status === 409) {
+            alert('該聯絡人已存在！');
+        } else if (response.status === 404) {
+            alert('找不到該使用者 ID');
+        } else if (response.status === 400) {
+            alert('請填寫完整資料，且不能新增自己為聯絡人');
+        } else if (response.status === 401) {
+            alert('驗證失敗，請重新登入');
+        } else {
+            alert('新增失敗，請稍後再試');
+        }
+    })
+    .catch(error => {
+        console.error('Error adding contact:', error);
+        alert('新增失敗，請稍後再試');
+    });
+});
+
+// 編輯聯絡人（更新聯絡人名稱）
+function editContact(contactId) {
+    const contactCard = document.querySelector(`.contact-card button[onclick="editContact('${contactId}')"]`).closest('.contact-card');
+    const contactNameElement = contactCard.querySelector('.contact-name');
+    const oldName = contactNameElement.textContent;
+
+    const newName = prompt('請輸入新的聯絡人名稱：', oldName);
+    if (!newName || newName.trim() === '') {
+        alert('名稱不可為空');
+        return;
+    }
+
+    const token = localStorage.getItem('jwt');
+
+    fetch(`${API_BASE}/contact/update`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+            token,
+            contact_user_id: contactId,
+            contact_name: newName.trim()
+        })
+    })
+    .then(response => {
+        if (response.status === 200) {
+            loadContacts();
+            alert('聯絡人名稱已更新');
+        } else if (response.status === 404) {
+            alert('找不到該聯絡人');
+        } else if (response.status === 400) {
+            alert('更新失敗，請確認資料正確');
+        } else if (response.status === 401) {
+            alert('驗證失敗，請重新登入');
+        } else {
+            alert('更新失敗，請稍後再試');
+        }
+    })
+    .catch(error => {
+        console.error('Error updating contact:', error);
+        alert('更新失敗，請稍後再試');
+    });
+}
+
+// 刪除聯絡人
+function deleteContact(contactId) {
+    if (!confirm('確定要刪除這個聯絡人嗎？此操作無法復原。')) {
+        return;
+    }
+    
+    const token = localStorage.getItem('jwt');
+    
+    fetch(`${API_BASE}/contact/delete`, {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ token, contact_user_id: contactId })
+    })
+    .then(response => {
+        if (response.status === 200) {
+            loadContacts();
+            alert('聯絡人已刪除');
+        } else if (response.status === 404) {
+            alert('聯絡人不存在');
+        } else if (response.status === 401) {
+            alert('驗證失敗，請重新登入');
+        } else {
+            alert('刪除失敗，請稍後再試');
+        }
+    })
+    .catch(error => {
+        console.error('Error deleting contact:', error);
+        alert('刪除失敗，請稍後再試');
+    });
+}
+
+// 點擊外部關閉側邊選單
+document.addEventListener('click', function(event) {
+    const sidebar = document.getElementById('sidebar');
+    const hamburger = document.querySelector('.hamburger-menu');
+    
+    if (!sidebar.contains(event.target) && !hamburger.contains(event.target)) {
+        if (sidebar.classList.contains('active')) {
+            closeSidebar();
+        }
+    }
+});
+
+// 頁面載入時執行
+window.onload = function() {
+    loadHeader();
+    loadContacts();
+};
+
+</script>
+</body>
+</html>

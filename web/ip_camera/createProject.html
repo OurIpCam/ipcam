@@ -1,0 +1,765 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0, user-scalable=no">
+    <title>新增專案 - ip camera</title>
+    
+	<link rel="stylesheet" href="static/css/createProject.css">
+</head>
+<body>
+
+    <div id="header-container"></div>
+
+    <div class="main-content">
+        <div class="container">
+            <div class="step-header">
+                <h1>新增監控專案</h1>
+                <p>請依照步驟完成專案設定</p>
+            </div>
+
+            <form id="multiStepForm">
+                <!-- 步驟 1: 專案基本資訊 -->
+                <div class="step active" id="step1">
+                    <h2>步驟 1：專案基本資訊</h2>
+                    
+                    <div class="form-group">
+                        <label for="projectName">專案名稱 *</label>
+                        <input type="text" id="projectName" name="project_name" placeholder="請輸入專案名稱" required>
+                    </div>
+
+                    <!-- 導航按鈕 - 第一頁只顯示右邊 -->
+                    <div class="navigation-buttons">
+                        <div></div> <!-- 空的左側 -->
+                        <button type="button" class="nav-button" onclick="nextStep()">
+                            <svg viewBox="0 0 24 24" fill="currentColor">
+                                <path d="M10 6L8.59 7.41 13.17 12l-4.58 4.59L10 18l6-6z"/>
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- 步驟 2: 選擇攝影機 -->
+                <div class="step" id="step2">
+                    <h2>步驟 2：選擇攝影機</h2>
+                    
+                    <div class="form-group">
+                        <label for="cameraSelect">攝影機 *</label>
+                        <select id="cameraSelect" name="camera_id" >
+					<!--	<select id="cameraSelect" name="camera_id" required>	-->
+                            <option value="">-- 請選擇攝影機 --</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label>攝影機資訊</label>
+                        <div id="cameraInfo" style="padding: 16px; background: #ffffff; border-radius: 8px; color: #666; border: 2px solid #e6d7ff;">
+                            請先選擇攝影機以查看詳細資訊
+                        </div>
+                    </div>
+
+                    <!-- 導航按鈕 - 兩邊都顯示 -->
+                    <div class="navigation-buttons">
+                        <button type="button" class="nav-button" onclick="prevStep()">
+                            <svg viewBox="0 0 24 24" fill="currentColor">
+                                <path d="M15.41 7.41L14 6l-6 6 6 6 1.41-1.41L10.83 12z"/>
+                            </svg>
+                        </button>
+                        <button type="button" class="nav-button" onclick="nextStep()">
+                            <svg viewBox="0 0 24 24" fill="currentColor">
+                                <path d="M10 6L8.59 7.41 13.17 12l-4.58 4.59L10 18l6-6z"/>
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+
+				<!--新增步驟 3: 輸入裝置ID -->
+				<div class="step" id="step3">
+					<h2>步驟 3：輸入裝置 ID</h2>
+					
+                    <div class="form-group">
+                        <label for="deviceID">裝置 ID *</label>
+                        <input type="text" id="deviceID" name="device_id" placeholder="請輸入裝置 ID" required>
+                    </div>
+                    <!-- 導航按鈕 -->
+                    <div class="navigation-buttons">
+                        <button type="button" class="nav-button" onclick="prevStep()">
+                            <svg viewBox="0 0 24 24" fill="currentColor">
+                                <path d="M15.41 7.41L14 6l-6 6 6 6 1.41-1.41L10.83 12z"/>
+                            </svg>
+                        </button>
+                        <button type="button" class="nav-button" onclick="nextStep()">
+                            <svg viewBox="0 0 24 24" fill="currentColor">
+                                <path d="M10 6L8.59 7.41 13.17 12l-4.58 4.59L10 18l6-6z"/>
+                            </svg>
+                        </button>
+                    </div>					
+					
+				
+				</div>
+				
+                <!-- 步驟 4: 選擇 AI 模型 -->
+                <div class="step" id="step4">
+                    <h2>步驟 4：選擇 AI 監控模型</h2>
+                    
+                    <div class="form-group">
+                        <label>請選擇要使用的 AI 模型：</label>
+                        <div class="checkbox-group" id="modelsContainer"></div>
+                    </div>
+
+                    <!-- 導航按鈕 -->
+                    <div class="navigation-buttons">
+                        <button type="button" class="nav-button" onclick="prevStep()">
+                            <svg viewBox="0 0 24 24" fill="currentColor">
+                                <path d="M15.41 7.41L14 6l-6 6 6 6 1.41-1.41L10.83 12z"/>
+                            </svg>
+                        </button>
+                        <button type="button" class="nav-button" onclick="nextStep()">
+                            <svg viewBox="0 0 24 24" fill="currentColor">
+                                <path d="M10 6L8.59 7.41 13.17 12l-4.58 4.59L10 18l6-6z"/>
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+
+
+
+                <!-- 步驟 5: 選擇聯絡人 -->
+                <div class="step" id="step5">
+                    <h2>步驟 5：選擇通知聯絡人</h2>
+                    
+                    <div class="form-group">
+                        <label>請選擇接收警報通知的聯絡人：</label>
+                        <div class="checkbox-group" id="contactsContainer">
+                            <!-- 聯絡人選項將由 JavaScript 動態載入 -->
+                        </div>
+                    </div>
+
+                    <!-- 導航按鈕 -->
+                    <div class="navigation-buttons">
+                        <button type="button" class="nav-button" onclick="prevStep()">
+                            <svg viewBox="0 0 24 24" fill="currentColor">
+                                <path d="M15.41 7.41L14 6l-6 6 6 6 1.41-1.41L10.83 12z"/>
+                            </svg>
+                        </button>
+                        <button type="button" class="nav-button" onclick="nextStep()">
+                            <svg viewBox="0 0 24 24" fill="currentColor">
+                                <path d="M10 6L8.59 7.41 13.17 12l-4.58 4.59L10 18l6-6z"/>
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- 步驟 6: 運作時間設定 -->
+                <div class="step" id="step6">
+                    <h2>步驟 6：運作時間設定</h2>
+
+                    <div class="form-group">
+                        <label>每日運作時間</label>
+                        <div class="time-grid">
+                            <div>
+                                <label for="dailyStartTime">開始時間</label>
+                                <input type="time" id="dailyStartTime" name="daily_start_time" value="00:00">
+                            </div>
+                            <div>
+                                <label for="dailyEndTime">結束時間</label>
+                                <input type="time" id="dailyEndTime" name="daily_end_time" value="23:59">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 導航按鈕 -->
+                    <div class="navigation-buttons">
+                        <button type="button" class="nav-button" onclick="prevStep()">
+                            <svg viewBox="0 0 24 24" fill="currentColor">
+                                <path d="M15.41 7.41L14 6l-6 6 6 6 1.41-1.41L10.83 12z"/>
+                            </svg>
+                        </button>
+                        <button type="button" class="nav-button" onclick="nextStep()">
+                            <svg viewBox="0 0 24 24" fill="currentColor">
+                                <path d="M10 6L8.59 7.41 13.17 12l-4.58 4.59L10 18l6-6z"/>
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- 步驟 7: 確認與提交 -->
+                <div class="step" id="step7">
+                    <h2>步驟 7：確認專案資訊</h2>
+                    
+                    <div class="preview-section" id="previewSection">
+                        <!-- 預覽內容將由 JavaScript 動態生成 -->
+                    </div>
+
+                    <div class="submit-section">
+                        <button type="submit" class="submit-button">
+                            🚀 建立專案
+                        </button>
+                    </div>
+
+                    <!-- 導航按鈕 - 最後一頁只顯示左邊 -->
+                    <div class="navigation-buttons">
+                        <button type="button" class="nav-button" onclick="prevStep()">
+                            <svg viewBox="0 0 24 24" fill="currentColor">
+                                <path d="M15.41 7.41L14 6l-6 6 6 6 1.41-1.41L10.83 12z"/>
+                            </svg>
+                        </button>
+                        <div></div> <!-- 空的右側 -->
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- 火箭動畫元素 
+    <div class="rocket-animation" id="rocketAnimation">🚀</div>-->
+
+    <!-- 監視器爆炸動畫容器 
+    <div class="camera-explosion" id="cameraExplosion"></div>-->
+
+    <div class="progress-container">
+        <div class="progress-bar">
+            <div class="progress-bar-fill" id="progressBarFill"></div>
+            <div class="progress-text" id="progressText">1 / 7</div>
+        </div>
+    </div>
+
+    <script>
+	
+const API_BASE = 'http://210.240.202.108:5000';
+let mockCameras = [];
+let mockModels = [];
+let mockContacts = [];
+
+/****************************************** 步驟及動畫區 ****************************************/
+// 全域變數
+const steps = document.querySelectorAll(".step");
+const progressBarFill = document.getElementById("progressBarFill");
+const progressText = document.getElementById("progressText");
+
+let currentStep = 0;
+
+// 更新進度條
+function updateProgress() {
+    const percentage = ((currentStep + 1) / steps.length) * 100;
+    progressBarFill.style.width = percentage + "%";
+    progressText.textContent = `${currentStep + 1} / ${steps.length}`;
+}
+
+// 顯示指定步驟
+function showStep(index) {
+    steps.forEach((step, i) => {
+        step.classList.toggle("active", i === index);
+    });
+    updateProgress();
+}
+
+// 下一步
+function nextStep() {
+    if (validateCurrentStep() && currentStep < steps.length - 1) {
+        currentStep++;
+        showStep(currentStep);
+        // 如果是最後一步，更新預覽
+        if (currentStep === steps.length - 1) {
+            updatePreview();
+        }
+    }
+}
+
+// 上一步
+function prevStep() {
+    if (currentStep > 0) {
+        currentStep--;
+        showStep(currentStep);
+    }
+}
+
+/*
+// 火箭爆炸動畫
+        function playRocketExplosion() {
+            const rocket = document.getElementById('rocketAnimation');
+            const explosion = document.getElementById('cameraExplosion');
+
+            // 顯示火箭並開始上升動畫
+            rocket.style.opacity = '1';
+            rocket.classList.add('rocket-launch');
+
+            // 2秒後開始監視器爆炸效果
+            setTimeout(() => {
+                // 創建多個監視器圖標
+                for (let i = 0; i < 12; i++) {
+                    const camera = document.createElement('div');
+                    camera.className = 'camera-icon camera-explode';
+                    camera.innerHTML = '📹';
+
+                    // 隨機方向和距離
+                    const angle = (i * 30) * Math.PI / 180; // 每30度一個
+                    const distance = 100 + Math.random() * 100; // 100-200px距離
+                    const x = Math.cos(angle) * distance;
+                    const y = Math.sin(angle) * distance;
+
+                    camera.style.setProperty('--x', x + 'px');
+                    camera.style.setProperty('--y', y + 'px');
+
+                    explosion.appendChild(camera);
+                }
+
+                // 3秒後清理動畫元素
+                setTimeout(() => {
+                    rocket.classList.remove('rocket-launch');
+                    rocket.style.opacity = '0';
+                    explosion.innerHTML = '';
+                }, 3000);
+            }, 2000);
+        }
+*/
+
+
+// 驗證當前步驟
+function validateCurrentStep() {
+    const currentStepElement = steps[currentStep];
+    const requiredFields = currentStepElement.querySelectorAll('[required]');
+    for (let field of requiredFields) {
+        if (!field.value.trim()) {
+            alert('請填寫所有必填欄位');
+            field.focus();
+            return false;
+        }
+    }
+    // 特殊驗證
+    if (steps[currentStep].id === "step4") { 	// AI 模型步驟
+        const checkedModels = currentStepElement.querySelectorAll('input[name="model_id"]:checked');
+        if (checkedModels.length === 0) {
+            alert('請至少選擇一個 AI 模型');
+            //return false;
+			return true;
+        }
+    }
+    if (steps[currentStep].id === "step5") { 	// 聯絡人步驟
+        const checkedContacts = currentStepElement.querySelectorAll('input[name="contact_id"]:checked');
+        if (checkedContacts.length === 0) {
+            alert('請至少選擇一個聯絡人');
+            //return false;
+			return true;
+        }
+    }
+    if (steps[currentStep].id === "step6") {	//時間步驟
+        const startInput = document.querySelector('input[name="daily_start_time"]');
+        const endInput = document.querySelector('input[name="daily_end_time"]');
+        const start = startInput.value;
+        const end = endInput.value;
+        if (!start || !end) {
+            alert('請設定每日運作時間');
+            //return false;
+			return true;
+        }
+        if (start >= end) {
+            alert('開始時間需早於結束時間');
+            //return false;
+			return true;
+        }
+    }
+    return true;
+}
+
+/*******************************攝影機資訊************************************/
+async function loadCameras() {
+  const token = localStorage.getItem("jwt");
+  const cameraSelect = document.getElementById('cameraSelect');
+  const infoBox = document.getElementById('cameraInfo');
+
+  // 清空舊資料
+  cameraSelect.innerHTML = '<option value="">-- 請選擇攝影機 --</option>';
+  infoBox.textContent = '請先選擇攝影機以查看詳細資訊';
+
+  fetch(`${API_BASE}/camera`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify({ token })
+  })
+  .then(res => {
+    if (res.status === 200) {
+      return res.json();
+    } else {
+      return res.json().then(err => {
+        throw new Error(err.error || `伺服器錯誤 (${res.status})`);
+      });
+    }
+  })
+  .then(data => {
+    if (!Array.isArray(data.cameras)) {
+      alert("⚠️ 後端回傳格式錯誤");
+      return;
+    }
+
+    if (data.cameras.length === 0) {
+      cameraSelect.innerHTML = '<option value="">🚫 無可用攝影機</option>';
+      return;
+    }
+
+    // 儲存到全域變數
+    mockCameras.length = 0;
+    mockCameras.push(...data.cameras);
+
+    // 渲染下拉選單
+    data.cameras.forEach(camera => {
+      const option = document.createElement('option');
+      option.value = camera.camera_id;
+      option.textContent = `${camera.camera_name} (${camera.ip_address})`;
+      option.dataset.camera = JSON.stringify(camera);
+      cameraSelect.appendChild(option);
+    });
+
+    // 綁定 onchange 更新攝影機資訊
+    cameraSelect.onchange = function () {
+      const selectedOption = this.selectedOptions[0];
+      if (!selectedOption || !selectedOption.dataset.camera) {
+        infoBox.textContent = '請先選擇攝影機以查看詳細資訊';
+        return;
+      }
+
+      const cam = JSON.parse(selectedOption.dataset.camera);
+      infoBox.innerHTML = `
+        <strong>${cam.camera_name}</strong><br>
+        📍 IP 位址：${cam.ip_address}<br>
+        🏷️ 品牌：${cam.device_brand || '無'}<br>
+        🔢 型號：${cam.device_model || '無'}<br>
+        👤 帳號：${cam.camera_username || '無'}<br>
+        🔗 RTSP：${cam.rtsp_url || '無'}<br>
+        🕒 建立時間：${cam.created_at || '未知'}
+      `;
+    };
+  })
+  .catch(err => {
+    console.error("❌ fetch 失敗：", err);
+    alert("❌ 無法與伺服器連線：" + err.message);
+  });
+}
+
+
+
+
+/*******************************AI 模型資訊************************************/
+async function loadModels() {
+  const token = localStorage.getItem("jwt");
+  const modelsContainer = document.getElementById('modelsContainer');
+
+  modelsContainer.innerHTML = '<p style="color: gray;">🔄 載入模型中...</p>';
+
+  fetch(`${API_BASE}/model`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify({ token })
+  })
+  .then(res => {
+    if (res.status === 200) {
+      return res.json();
+    } else {
+      return res.json().then(err => {
+        throw new Error(err.error || `伺服器錯誤 (${res.status})`);
+      });
+    }
+  })
+  .then(data => {
+    modelsContainer.innerHTML = ''; // 清空載入中提示
+
+    if (!Array.isArray(data.models)) {
+      modelsContainer.innerHTML = '<p style="color: red;">⚠️ 模型資料格式錯誤</p>';
+      return;
+    }
+
+    if (data.models.length === 0) {
+      modelsContainer.innerHTML = '<p style="text-align:center; color: gray;">🚫 目前尚無可用的模型</p>';
+      return;
+    }
+
+    // 儲存至 mockModels
+    mockModels.length = 0;
+    mockModels.push(...data.models);
+
+    // 渲染模型清單
+    data.models.forEach(model => {
+      const checkboxItem = document.createElement('div');
+      checkboxItem.className = 'checkbox-item';
+      checkboxItem.style.display = 'flex';
+      checkboxItem.style.alignItems = 'flex-start';
+      checkboxItem.style.marginBottom = '12px';
+
+      checkboxItem.innerHTML = `
+        <input type="checkbox" id="model_${model.model_id}" name="model_id" value="${model.model_id}" style="margin-top: 6px; margin-right: 10px;">
+        <div class="checkbox-content">
+          <h4 style="margin: 0;">${model.model_name}（v${model.model_version}）</h4>
+          <p style="margin: 4px 0 0;">事件類型：${model.event_type || '無'}</p>
+        </div>
+      `;
+
+      modelsContainer.appendChild(checkboxItem);
+    });
+  })
+  .catch(err => {
+    console.error("❌ 無法載入模型資料：", err);
+    alert("❌ 無法載入模型資料：" + err.message);
+    modelsContainer.innerHTML = '<p style="color: red;">❌ 載入失敗</p>';
+  });
+}
+
+
+
+
+
+/*******************************聯絡人資訊************************************/
+async function loadContacts() {
+    const token = localStorage.getItem("jwt");
+    const contactsContainer = document.getElementById('contactsContainer');
+
+    contactsContainer.innerHTML = '<p style="color: gray;">🔄 載入聯絡人中...</p>';
+
+    if (!token) {
+        alert("⚠️ 找不到登入憑證，請重新登入");
+        contactsContainer.innerHTML = '<p style="color: red;">❌ 無法載入：未登入</p>';
+        return;
+    }
+
+    fetch(`${API_BASE}/contact`, {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json"
+        },
+        body: JSON.stringify({ token })
+    })
+    .then(res => {
+        if (res.status === 200) {
+            return res.json();
+        } else {
+            return res.json().then(err => {
+                throw new Error(err.error || `伺服器錯誤 (${res.status})`);
+            });
+        }
+    })
+    .then(data => {
+        contactsContainer.innerHTML = ''; // 清空提示
+
+        if (!Array.isArray(data.contacts)) {
+            contactsContainer.innerHTML = '<p style="color: red;">⚠️ 聯絡人資料格式錯誤</p>';
+            return;
+        }
+
+        if (data.contacts.length === 0) {
+            contactsContainer.innerHTML = '<p style="text-align:center; color: gray;">🚫 尚無聯絡人</p>';
+            return;
+        }
+
+        // 儲存到全域變數
+        mockContacts.length = 0;
+        mockContacts.push(...data.contacts);
+
+        // 渲染 checkbox 選項
+        data.contacts.forEach(contact => {
+            const checkboxItem = document.createElement('div');
+            checkboxItem.className = 'checkbox-item';
+            checkboxItem.style.display = 'flex';
+            checkboxItem.style.alignItems = 'flex-start';
+            checkboxItem.style.marginBottom = '12px';
+
+            checkboxItem.innerHTML = `
+                <input type="checkbox" id="contact_${contact.contact_id}" name="contact_id" value="${contact.contact_id}" style="margin-top: 6px; margin-right: 10px;">
+                <div class="checkbox-content">
+                    <h4 style="margin: 0;">${contact.contact_name}</h4>
+                    <p style="margin: 4px 0 0;">ID: ${contact.contact_id}</p>
+                </div>
+            `;
+            contactsContainer.appendChild(checkboxItem);
+        });
+    })
+    .catch(err => {
+        console.error("❌ 無法載入聯絡人資料：", err);
+        alert("❌ 無法載入聯絡人資料：" + err.message);
+        contactsContainer.innerHTML = '<p style="color: red;">❌ 載入失敗</p>';
+    });
+}
+
+
+
+
+
+
+
+/*********************************提交表單前 預覽頁面*************************************/
+function updatePreview() {
+    const formData = new FormData(document.getElementById('multiStepForm'));
+    const previewSection = document.getElementById('previewSection');
+
+    // 專案名稱
+    const projectName = formData.get('')?.trim() || '未設定';
+
+    // 攝影機
+    const selectedCamera = mockCameras.find(c => c.camera_id == formData.get('camera_id'));
+    const cameraName = selectedCamera ? `${selectedCamera.camera_name} (${selectedCamera.ip_address})` : '未選擇';
+
+    // 裝置ID
+    const deviceID = formData.get('device_id')?.trim() || '未設定';
+
+    // AI 模型
+    const selectedModels = Array.from(document.querySelectorAll('input[name="model_id"]:checked'))
+        .map(el => {
+            const id = parseInt(el.value);
+            const model = mockModels.find(m => m.model_id === id);
+            return model ? `${model.model_name}（v${model.model_version}）` : null;
+        })
+        .filter(Boolean);
+
+    // 聯絡人
+    const selectedContacts = Array.from(document.querySelectorAll('input[name="contact_id"]:checked'))
+        .map(el => {
+            const id = parseInt(el.value);
+            const contact = mockContacts.find(c => c.contact_id === id);
+            return contact ? `${contact.contact_name} (ID: ${contact.contact_id})` : null;
+        })
+        .filter(Boolean);
+
+    // 運作時間
+    const startTime = formData.get('daily_start_time') || '未設定';
+    const endTime = formData.get('daily_end_time') || '未設定';
+
+    // 組合 HTML
+    previewSection.innerHTML = `
+        <h3 style="margin-top: 0; color: #6a4c93;">📋 專案資訊預覽</h3>
+
+        <div class="preview-item">
+            <span class="preview-label">專案名稱:</span>
+            <span class="preview-value">${projectName}</span>
+        </div>
+
+        <div class="preview-item">
+            <span class="preview-label">攝影機:</span>
+            <span class="preview-value">${cameraName}</span>
+        </div>
+
+		<div class="preview-item">
+            <span class="preview-label">裝置 ID:</span>
+            <span class="preview-value">${deviceID}</span>
+        </div>
+
+        <div class="preview-item">
+            <span class="preview-label">AI 模型:</span>
+            <span class="preview-value">${selectedModels.length ? selectedModels.join(', ') : '未選擇'}</span>
+        </div>
+
+        <div class="preview-item">
+            <span class="preview-label">通知聯絡人:</span>
+            <span class="preview-value">${selectedContacts.length ? selectedContacts.join(', ') : '未選擇'}</span>
+        </div>
+
+        <div class="preview-item">
+            <span class="preview-label">每日運作時間:</span>
+            <span class="preview-value">${startTime} - ${endTime}</span>
+        </div>
+    `;
+}
+
+
+
+
+
+/*********************************提交表單*******************************/
+document.getElementById('multiStepForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    if (!validateCurrentStep()) return;
+
+    const formData = new FormData(this);
+    const project_name = formData.get('project_name')?.trim();
+    const camera_id = parseInt(formData.get('camera_id'));
+	const device_id = formData.get('device_id')?.trim();
+    const contact_id = Array.from(document.querySelectorAll('input[name="contact_id"]:checked')).map(el => parseInt(el.value));
+    const model_id = Array.from(document.querySelectorAll('input[name="model_id"]:checked')).map(el => parseInt(el.value));
+    const daily_start_time = formData.get('daily_start_time');
+    const daily_end_time = formData.get('daily_end_time');
+    const token = localStorage.getItem("jwt") || "";
+
+    const payload = {
+        token,
+        project_name,
+        camera_id,
+		device_id,
+        start_time: {
+            start: daily_start_time,
+            end: daily_end_time
+        },
+        contact_id,
+        model_id,
+        event_id: [],
+        status: "1"
+    };
+
+    const submitButton = document.querySelector('.submit-button');
+    const originalText = submitButton.textContent;
+    submitButton.disabled = true;
+    submitButton.textContent = '🔄 建立中...';
+    //playRocketExplosion();
+
+	fetch(`${API_BASE}/project/create`, {
+		method: "POST",
+		headers: {
+			"Content-Type": "application/json"
+		},
+		body: JSON.stringify(payload)
+	})
+	.then(res => {
+		if (res.status === 200) {
+			//return res.json(); // 可選，看你是否想處理成功回傳內容
+			//document.getElementById("successMessage").style.display = "block";
+			setTimeout(() => {
+			window.location.href = 'main.html';
+		}, 5000);
+		} else {
+			return res.json().then(err => {
+				throw new Error(err.error || `建立失敗（HTTP ${res.status}）`);
+			});
+		}
+	})
+	/*
+	.then(data => {
+		document.getElementById("successMessage").style.display = "block";
+		setTimeout(() => {
+			window.location.href = 'main.html';
+		}, 5000);
+	})
+	*/
+	.catch(err => {
+		alert("❌ 建立失敗：" + err.message);
+		submitButton.disabled = false;
+		submitButton.textContent = originalText;
+	});
+});
+
+// 初始化
+window.onload = async function() {
+    // 設定預設開始與結束時間
+    const startInput = document.querySelector('input[name="daily_start_time"]');
+    const endInput = document.querySelector('input[name="daily_end_time"]');
+
+
+
+    // 載入各項資料
+    await loadCameras();
+    await loadModels();
+    await loadContacts();
+
+    if (startInput && endInput) {
+        startInput.value = '08:00';
+        endInput.value = '18:00';
+    }
+
+    // 顯示初始步驟
+    showStep(currentStep);
+};
+
+
+</script>
+
+</body>
+</html>

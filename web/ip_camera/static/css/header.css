@@ -1,0 +1,239 @@
+body {
+    margin: 0;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+    background: #ffffff;
+    color: #191919;
+    line-height: 1.6;
+    padding-top: 70px;
+}
+
+/* === 頁首固定長條 === */
+.header-bar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 70px;
+  background-color: #000;
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 30px;
+  z-index: 100;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+  transition: background-color 0.3s ease;
+}
+
+.header-title {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  font-size: 30px;
+  font-weight: bold;
+  color: white;
+  transition: color 0.3s ease;
+  white-space: nowrap;
+}
+
+/* === logo === */
+.header-center-logo {
+  position: absolute;
+  left: 10%;
+  transform: translateX(-50%);
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+}
+
+.header-center-logo img {
+  height: 20px;
+  object-fit: contain;
+  transition: filter 0.3s ease;
+}
+
+/* === 頁首：當滑鼠懸停時，變更頁首背景色和 logo 顏色 === */
+.header-bar:hover {
+    background-color: white;
+    color: black;
+}
+
+.header-bar:hover .header-title {
+    color: black;
+}
+
+.header-bar:hover .hamburger-line {
+    background: black;
+}
+
+/* 新增：當滑鼠懸停在header上時，logo變成黑色 */
+.header-bar:hover .header-center-logo img {
+    filter: brightness(0); /* 將圖片變成黑色 */
+}
+
+/* 當滑鼠懸停在header上時，用戶名稱變成黑色 */
+.header-bar:hover .name {
+    color: #333;
+    text-shadow: none;
+}
+
+/* === 頭像區塊樣式 === */
+.head {
+    position: absolute;
+    right: 20px; 
+    top: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 150;
+}
+
+.head button {
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    border: none;
+    background: transparent;
+    cursor: pointer;
+    position: absolute;
+    z-index: 200;
+}
+
+.head img {
+    width: 50px;
+    height: 50px;
+    border-radius: 50%;
+    z-index: 100;
+    object-fit: cover;
+    border: 2px solid rgba(255, 255, 255, 0.7);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+}
+
+
+
+/* === 側邊選單 === */
+.sidebar {
+  position: fixed;
+  top: 70px;
+  left: 0;
+  width: 90px;
+  height: calc(100vh - 70px);
+  background-color: #f8f9fa;
+  border-right: 1px solid #e9ecef;
+  z-index: 50;
+  display: flex;
+  flex-direction: column; /* 垂直排列各 sidebar-item */
+  align-items: center;
+  padding: 15px 0;
+  gap: 8px;
+  overflow-y: auto;
+}
+
+.sidebar-content {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: 100%; /* 讓每個 item 滿版可點擊 */
+}
+
+.sidebar-item {
+  display: flex;
+  flex-direction: column;   /* icon 在上、文字在下 */
+  align-items: center;
+  justify-content: center;
+  padding: 10px 0;
+  text-decoration: none;
+  color: #333;
+  transition: all 0.3s ease;
+  border-left: 4px solid transparent;
+  width: 100%;
+}
+
+.sidebar-item:hover {
+  background-color: #eaeaea;
+  border-left-color: #000;
+  color: #000;
+}
+
+.sidebar-item.active {
+  background-color: #f0f0f0;
+  border-left-color: #000;
+  color: #000;
+}
+
+.sidebar-icon {
+  width: 24px;
+  height: 24px;
+  margin: 0;
+  flex-shrink: 0;
+}
+
+.sidebar-text {
+  font-size: 12px;
+  margin-top: 4px;
+  text-align: center;
+  color: #333;
+  display: block;
+  line-height: 1.2;
+}
+
+.menu {
+    display: none;
+    position: absolute;
+    right: 20px;
+    top: 75px;
+    background: white;
+    width: 200px;
+    /*box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3);*/
+    border-radius: 12px;
+    padding: 20px;
+    z-index: 200;
+    border: 1px solid #e0e0e0;
+}
+
+.menu.show {
+    display: block;
+}
+
+.menu .user-info {
+    text-align: center;
+    padding: 15px 10px;
+    border-bottom: 1px solid #ddd;
+}
+.menu .profile-pic-main{
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    z-index: 100;
+    object-fit: cover;
+    border: 2px solid rgba(255, 255, 255, 0.7);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);	
+	
+}
+
+.menu .user-info p {
+    margin: 5px 0;
+    font-size: 16px;
+    font-weight: bold;
+    color: #333;
+}
+
+/* 登出按鈕 */
+.menu .logout {
+    text-align: center;
+    padding: 15px 10px;
+    color: #dc3545;
+    cursor: pointer;
+    font-weight: bold;
+    border-radius: 8px;
+    margin-top: 5px;
+    transition: background-color 0.2s ease;
+}
+
+.menu .logout:hover {
+    background: #f8f9fa;
+    color: #c82333;
+}

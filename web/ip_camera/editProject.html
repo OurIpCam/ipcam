@@ -1,0 +1,1601 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0, user-scalable=no">
+    <title>編輯專案 - ip camera</title>
+    
+    <script src="/static/js/header.js"></script>
+    <link rel="stylesheet" href="/static/css/header.css">
+</head>
+<body>
+    <style>
+```css
+html, body {
+    margin: 0;
+    padding: 0;
+    background: #ffffff;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+    overflow-x: hidden;
+    min-height: 100vh;
+    /* 隱藏滾動條但保持滾動功能 */
+    scrollbar-width: none; /* Firefox */
+    -ms-overflow-style: none; /* IE and Edge */
+}
+
+html::-webkit-scrollbar,
+body::-webkit-scrollbar {
+    display: none; /* Chrome, Safari, Opera */
+}
+
+.main-content {
+    min-height: 100vh;
+    position: relative;
+    padding-top: 80px;
+}
+
+.container {
+    position: relative;
+    top: 80px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 700px;
+    text-align: center;
+}
+
+.step-header {
+    background: white;
+    color: black;
+    padding: 20px;
+    border-radius: 16px 16px 0 0;
+    margin-bottom: 0;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    border: 2px solid #f0f0f0;
+}
+
+.step-header h1 {
+    margin: 0;
+    font-size: 28px;
+    font-weight: 700;
+    color: black;
+}
+
+.step-header p {
+    margin: 8px 0 0 0;
+    opacity: 0.7;
+    font-size: 16px;
+    color: #666;
+}
+
+.step {
+    display: none;
+    text-align: left;
+    background: white;
+    padding: 32px;
+    border-radius: 0 0 12px 12px;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+    border: 2px solid #f0f0f0;
+    border-top: none;
+    min-height: 400px;
+    position: relative;
+}
+
+.step.active {
+    display: block;
+}
+
+.step h2 {
+    font-size: 24px;
+    margin-bottom: 24px;
+    color: black;
+    font-weight: 600;
+}
+
+.form-group {
+    margin-bottom: 24px;
+}
+
+.form-group label {
+    display: block;
+    margin-bottom: 8px;
+    font-weight: 600;
+    color: black;
+    font-size: 16px;
+}
+
+.form-group input[type="text"],
+.form-group input[type="datetime-local"],
+.form-group input[type="time"],
+.form-group select,
+.form-group textarea {
+    width: 100%;
+    padding: 12px 16px;
+    border: 2px solid #e0e0e0;
+    border-radius: 8px;
+    font-size: 16px;
+    transition: all 0.3s ease;
+    background-color: #f8f9fa;
+    box-sizing: border-box;
+    color: #666;
+}
+
+.form-group input:focus,
+.form-group select:focus,
+.form-group textarea:focus {
+    border-color: #666;
+    box-shadow: 0 0 0 3px rgba(0, 0, 0, 0.05);
+    outline: none;
+    background-color: white;
+}
+
+.checkbox-group {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 12px;
+    margin-top: 12px;
+}
+
+.checkbox-item {
+    display: flex;
+    align-items: flex-start;
+    padding: 16px;
+    border: 2px solid #e0e0e0;
+    border-radius: 8px;
+    transition: all 0.3s ease;
+    background: white;
+}
+
+.checkbox-item:hover {
+    border-color: #666;
+    background: #f8f9fa;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.checkbox-item input[type="checkbox"] {
+    margin-right: 12px;
+    margin-top: 2px;
+    transform: scale(1.2);
+    accent-color: black;
+}
+
+.checkbox-item input[type="checkbox"]:checked + .checkbox-content {
+    color: black;
+}
+
+.checkbox-content h4 {
+    margin: 0 0 4px 0;
+    font-size: 16px;
+    font-weight: 600;
+    color: black;
+}
+
+.checkbox-content p {
+    margin: 0;
+    font-size: 14px;
+    color: #666;
+}
+
+.time-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+}
+
+/* 專案狀態選擇 */
+.status-group {
+    margin-bottom: 24px;
+}
+
+.status-options {
+    display: flex;
+    gap: 16px;
+    margin-top: 12px;
+}
+
+.status-option {
+    flex: 1;
+    padding: 16px;
+    border: 2px solid #e0e0e0;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    text-align: center;
+    background: white;
+}
+
+.status-option:hover {
+    border-color: #666;
+    background: #f8f9fa;
+}
+
+.status-option.selected {
+    border-color: #666;
+    background: #f8f9fa;
+}
+
+.status-option input[type="radio"] {
+    display: none;
+}
+
+.status-option .status-icon {
+    font-size: 24px;
+    margin-bottom: 8px;
+}
+
+.status-option .status-title {
+    font-weight: 600;
+    color: black;
+    margin-bottom: 4px;
+}
+
+.status-option .status-desc {
+    font-size: 14px;
+    color: #666;
+}
+
+/* 導航按鈕定位 - 第一頁只顯示右邊，其他頁面顯示兩邊 */
+.navigation-buttons {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    width: calc(100% + 200px);
+    left: -100px;
+    display: flex;
+    justify-content: space-between;
+    pointer-events: none;
+    z-index: 10;
+}
+
+/* 桌面版導航按鈕樣式 */
+@media (min-width: 769px) {
+    .navigation-buttons {
+        position: absolute;
+        top: 50%;
+        transform: translateY(-50%);
+        width: calc(100% + 200px);
+        left: -100px;
+        display: flex;
+        justify-content: space-between;
+        pointer-events: none;
+        z-index: 10;
+    }
+}
+
+.nav-button {
+    background: black;
+    border: none;
+    cursor: pointer;
+    padding: 0;
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 50px;
+    height: 50px;
+    border-radius: 50%;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
+    pointer-events: auto;
+    position: relative;
+    overflow: hidden;
+}
+
+.nav-button::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.2) 0%, rgba(255, 255, 255, 0.1) 100%);
+    border-radius: 50%;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+.nav-button:hover::before {
+    opacity: 1;
+}
+
+.nav-button:hover {
+    transform: scale(1.1);
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.4);
+}
+
+.nav-button:disabled {
+    opacity: 0.3;
+    cursor: not-allowed;
+    background: #ccc;
+}
+
+.nav-button:disabled:hover {
+    transform: none;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
+}
+
+.nav-button svg {
+    width: 20px;
+    height: 20px;
+    color: white;
+    z-index: 1;
+    position: relative;
+}
+
+/* 進度條樣式 */
+.progress-container {
+    position: fixed;
+    bottom: 30px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 5;
+}
+
+/* 手機版進度條調整 */
+@media (max-width: 768px) {
+    .progress-container {
+        position: absolute;
+        bottom: -120px;
+        left: 50%;
+        transform: translateX(-50%);
+        width: calc(100% - 40px);
+        max-width: 500px;
+    }
+    
+    .container {
+        width: 85%;
+        top: 60px;
+        margin-bottom: 200px; /* 增加底部空間給進度條 */
+        transform: translateX(-50%) scale(0.95);
+        position: relative; /* 確保進度條相對定位有效 */
+    }
+    
+    .progress-bar {
+        width: 100%;
+        height: 55px; /* 原35px + 20px */
+        margin: 0 auto;
+    }
+
+    .progress-text {
+        font-size: 16px;
+        font-weight: 700;
+    }
+}
+
+@media (max-width: 480px) {
+    .progress-container {
+        bottom: -120px;
+        width: calc(100% - 30px);
+        max-width: 400px;
+    }
+
+    .container {
+        width: 85%;
+        top: 30px;
+        margin-bottom: 200px;
+        transform: translateX(-50%) scale(0.9);
+        position: relative;
+    }
+    
+    .progress-bar {
+        width: 100%;
+        height: 55px; /* 原35px + 20px */
+    }
+
+    .progress-text {
+        font-size: 15px;
+    }
+}
+
+.progress-bar {
+    width: 600px;
+    height: 35px;
+    background: linear-gradient(135deg, #f0f0f0 0%, #e0e0e0 100%);
+    border-radius: 20px;
+    box-shadow: 0px 4px 15px rgba(0, 0, 0, 0.1);
+    position: relative;
+    overflow: hidden;
+    border: 2px solid #e0e0e0;
+}
+
+.progress-bar-fill {
+    height: 100%;
+    background: linear-gradient(135deg, #333 0%, #000 50%, #333 100%);
+    border-radius: 20px;
+    transition: width 0.5s ease;
+    width: 0%;
+    position: relative;
+    overflow: hidden;
+}
+
+/* 泡泡動畫 */
+.progress-bar-fill::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-image: 
+        radial-gradient(circle at 20% 50%, rgba(255, 255, 255, 0.3) 2px, transparent 2px),
+        radial-gradient(circle at 40% 20%, rgba(255, 255, 255, 0.2) 1px, transparent 1px),
+        radial-gradient(circle at 60% 80%, rgba(255, 255, 255, 0.25) 1.5px, transparent 1.5px),
+        radial-gradient(circle at 80% 30%, rgba(255, 255, 255, 0.2) 1px, transparent 1px),
+        radial-gradient(circle at 90% 70%, rgba(255, 255, 255, 0.3) 2px, transparent 2px);
+    background-size: 50px 50px, 30px 30px, 40px 40px, 35px 35px, 45px 45px;
+    animation: bubbles 3s linear infinite;
+}
+
+@keyframes bubbles {
+    0% {
+        transform: translateX(-100px);
+    }
+    100% {
+        transform: translateX(100px);
+    }
+}
+
+.progress-text {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    color: white;
+    font-weight: 600;
+    font-size: 14px;
+    z-index: 1;
+    text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.5);
+}
+
+.submit-section {
+    text-align: center;
+    padding: 40px 0;
+}
+
+.submit-button {
+    background: black;
+    color: white;
+    border: none;
+    padding: 16px 32px;
+    border-radius: 50px;
+    font-size: 18px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
+    position: relative;
+    overflow: hidden;
+}
+
+.submit-button::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+    transition: left 0.5s;
+}
+
+.submit-button:hover::before {
+    left: 100%;
+}
+
+.submit-button:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+}
+
+.preview-section {
+    background: white;
+    border-radius: 12px;
+    padding: 24px;
+    margin-top: 24px;
+    border: 2px solid #f0f0f0;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+}
+
+.preview-item {
+    display: flex;
+    justify-content: space-between;
+    padding: 8px 0;
+    border-bottom: 1px solid #e0e0e0;
+}
+
+.preview-item:last-child {
+    border-bottom: none;
+}
+
+.preview-label {
+    font-weight: 600;
+    color: black;
+}
+
+.preview-value {
+    color: #666;
+}
+
+/* 火箭和監視器爆炸動畫 */
+.rocket-animation {
+    position: fixed;
+    bottom: 50%;
+    left: 50%;
+    transform: translateX(-50%);
+    font-size: 60px;
+    z-index: 1000;
+    opacity: 0;
+    pointer-events: none;
+}
+
+.rocket-launch {
+    animation: rocketLaunch 2s ease-out forwards;
+}
+
+@keyframes rocketLaunch {
+    0% {
+        opacity: 1;
+        transform: translateX(-50%) translateY(0) rotate(0deg);
+    }
+    100% {
+        opacity: 0;
+        transform: translateX(-50%) translateY(-300px) rotate(360deg);
+    }
+}
+
+.camera-explosion {
+    position: fixed;
+    top: 20%;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 1000;
+    pointer-events: none;
+}
+
+.camera-icon {
+    position: absolute;
+    font-size: 30px;
+    opacity: 0;
+    color: black;
+}
+
+.camera-explode {
+    animation: cameraExplode 3s ease-out forwards;
+}
+
+@keyframes cameraExplode {
+    0% {
+        opacity: 1;
+        transform: translate(0, 0) scale(0.5);
+    }
+    50% {
+        opacity: 1;
+        transform: translate(var(--x), var(--y)) scale(1);
+    }
+    100% {
+        opacity: 0;
+        transform: translate(var(--x), var(--y)) scale(0.5);
+    }
+}
+
+/* 響應式設計 */
+@media (max-width: 768px) {
+    .container {
+        width: 85%;
+        top: 60px;
+        margin-bottom: 200px; /* 增加底部空間給進度條 */
+        transform: translateX(-50%) scale(0.95);
+        position: relative; /* 確保進度條相對定位有效 */
+    }
+
+    .progress-bar {
+        width: 100%;
+    }
+
+    .progress-container {
+        position: absolute;
+        bottom: -120px;
+        left: 50%;
+        transform: translateX(-50%);
+        width: calc(100% - 40px);
+        max-width: 500px;
+    }
+
+    /* 手機版導航按鈕重新定位 */
+    .navigation-buttons {
+        position: static;
+        width: 100%;
+        left: auto;
+        transform: none;
+        justify-content: center;
+        gap: 40px;
+        margin-top: 30px;
+        margin-bottom: 20px;
+        pointer-events: auto;
+    }
+
+    .nav-button {
+        width: 50px;
+        height: 50px;
+        position: relative;
+    }
+
+    .nav-button svg {
+        width: 20px;
+        height: 20px;
+    }
+
+    .checkbox-group {
+        grid-template-columns: 1fr;
+    }
+
+    .time-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .step {
+        padding: 24px;
+        min-height: 350px;
+    }
+
+    .step-header h1 {
+        font-size: 24px;
+    }
+
+    .step-header p {
+        font-size: 14px;
+    }
+
+    .status-options {
+        flex-direction: column;
+        gap: 12px;
+    }
+}
+
+@media (max-width: 480px) {
+    .container {
+        width: 85%;
+        top: 30px;
+        margin-bottom: 200px;
+        transform: translateX(-50%) scale(0.9);
+        position: relative;
+    }
+    
+    .step {
+        padding: 20px;
+        min-height: 320px;
+    }
+    
+    .progress-bar {
+        width: 85%;
+        height: 30px;
+    }
+
+    .progress-text {
+        font-size: 12px;
+    }
+    
+    .navigation-buttons {
+        gap: 30px;
+        margin-top: 25px;
+    }
+    
+    .nav-button {
+        width: 45px;
+        height: 45px;
+    }
+
+    .nav-button svg {
+        width: 18px;
+        height: 18px;
+    }
+
+    .step-header h1 {
+        font-size: 22px;
+    }
+
+    .step-header p {
+        font-size: 13px;
+    }
+
+    .form-group label {
+        font-size: 15px;
+    }
+
+    .form-group input,
+    .form-group select,
+    .form-group textarea {
+        font-size: 15px;
+        padding: 10px 14px;
+    }
+}
+
+@media (max-height: 800px) {
+    .container {
+        top: 30px;
+    }
+    
+    .step {
+        min-height: 300px;
+    }
+    
+    .progress-container {
+        bottom: 10px;
+    }
+}
+
+/* 美化滾動條 */
+* {
+    scrollbar-width: none; /* Firefox */
+    -ms-overflow-style: none; /* IE and Edge */
+}
+
+*::-webkit-scrollbar {
+    display: none; /* Chrome, Safari, Opera */
+}
+
+#cameraInfo {
+    padding: 16px; 
+    background: white; 
+    border-radius: 8px; 
+    color: #666; 
+    border: 2px solid #f0f0f0;
+}
+
+.step h2 {
+    color: black;
+}
+
+.form-group label {
+    color: black;
+}
+
+.checkbox-content h4 {
+    color: black;
+}
+
+.preview-label {
+    color: black;
+}
+
+.preview-value {
+    color: #666;
+}
+
+.back-button {
+    position: absolute;
+    top: 20px;
+    left: 20px;
+    background: white;
+    color: black;
+    border: 2px solid #e0e0e0;
+    padding: 10px 16px;
+    border-radius: 8px;
+    font-size: 14px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.back-button:hover {
+    background: #f8f9fa;
+    border-color: black;
+}
+```
+
+
+    </style>
+
+    <div id="header-container"></div>
+
+    <div class="main-content">
+        <a href="main.html" class="back-button">
+            ← 返回專案列表
+        </a>
+
+        <div class="container">
+            <div class="step-header">
+                <h1>編輯監控專案</h1>
+                <p>修改專案設定並儲存變更</p>
+            </div>
+
+            <form id="multiStepForm">
+                <!-- 步驟 1: 專案基本資訊 -->
+                <div class="step active" id="step1">
+                    <h2>步驟 1：專案基本資訊</h2>
+                    
+                    <div class="form-group">
+                        <label for="projectName">專案名稱 *</label>
+                        <input type="text" id="projectName" name="project_name" placeholder="請輸入專案名稱" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="projectDescription">專案描述</label>
+                        <textarea id="projectDescription" name="project_description" rows="3" placeholder="請輸入專案描述（選填）"></textarea>
+                    </div>
+
+                    <div class="status-group">
+                        <label>專案狀態 *</label>
+                        <div class="status-options">
+                            <div class="status-option" onclick="selectStatus('1')">
+                                <input type="radio" name="project_status" value="1" id="status_active">
+                                <div class="status-icon">🟢</div>
+                                <div class="status-title">啟用</div>
+                                <div class="status-desc">專案正常運作中</div>
+                            </div>
+                            <div class="status-option" onclick="selectStatus('0')">
+                                <input type="radio" name="project_status" value="0" id="status_inactive">
+                                <div class="status-icon">🔴</div>
+                                <div class="status-title">停用</div>
+                                <div class="status-desc">專案暫停運作</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 導航按鈕 - 第一頁只顯示右邊 -->
+                    <div class="navigation-buttons">
+                        <div></div> <!-- 空的左側 -->
+                        <button type="button" class="nav-button" onclick="nextStep()">
+                            <svg viewBox="0 0 24 24" fill="currentColor">
+                                <path d="M10 6L8.59 7.41 13.17 12l-4.58 4.59L10 18l6-6z"/>
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- 步驟 2: 選擇攝影機 -->
+                <div class="step" id="step2">
+                    <h2>步驟 2：選擇攝影機</h2>
+                    
+                    <div class="form-group">
+                        <label for="cameraSelect">攝影機 *</label>
+                        <select id="cameraSelect" name="camera_id" required>
+                            <option value="">-- 請選擇攝影機 --</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label>攝影機資訊</label>
+                        <div id="cameraInfo">
+                            請先選擇攝影機以查看詳細資訊
+                        </div>
+                    </div>
+
+                    <!-- 導航按鈕 - 兩邊都顯示 -->
+                    <div class="navigation-buttons">
+                        <button type="button" class="nav-button" onclick="prevStep()">
+                            <svg viewBox="0 0 24 24" fill="currentColor">
+                                <path d="M15.41 7.41L14 6l-6 6 6 6 1.41-1.41L10.83 12z"/>
+                            </svg>
+                        </button>
+                        <button type="button" class="nav-button" onclick="nextStep()">
+                            <svg viewBox="0 0 24 24" fill="currentColor">
+                                <path d="M10 6L8.59 7.41 13.17 12l-4.58 4.59L10 18l6-6z"/>
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- 步驟 3: 選擇 AI 模型 -->
+                <div class="step" id="step3">
+                    <h2>步驟 3：選擇 AI 監控模型</h2>
+                    
+                    <div class="form-group">
+                        <label>請選擇要使用的 AI 模型：</label>
+                        <div class="checkbox-group" id="modelsContainer">
+                            <!-- 模型選項將由 JavaScript 動態載入 -->
+                        </div>
+                    </div>
+
+                    <!-- 導航按鈕 -->
+                    <div class="navigation-buttons">
+                        <button type="button" class="nav-button" onclick="prevStep()">
+                            <svg viewBox="0 0 24 24" fill="currentColor">
+                                <path d="M15.41 7.41L14 6l-6 6 6 6 1.41-1.41L10.83 12z"/>
+                            </svg>
+                        </button>
+                        <button type="button" class="nav-button" onclick="nextStep()">
+                            <svg viewBox="0 0 24 24" fill="currentColor">
+                                <path d="M10 6L8.59 7.41 13.17 12l-4.58 4.59L10 18l6-6z"/>
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- 步驟 4: 選擇事件類型 -->
+                <div class="step" id="step4">
+                    <h2>步驟 4：選擇監控事件</h2>
+                    
+                    <div class="form-group">
+                        <label>請選擇要監控的事件類型：</label>
+                        <div class="checkbox-group" id="eventsContainer">
+                            <!-- 事件選項將由 JavaScript 動態載入 -->
+                        </div>
+                    </div>
+
+                    <!-- 導航按鈕 -->
+                    <div class="navigation-buttons">
+                        <button type="button" class="nav-button" onclick="prevStep()">
+                            <svg viewBox="0 0 24 24" fill="currentColor">
+                                <path d="M15.41 7.41L14 6l-6 6 6 6 1.41-1.41L10.83 12z"/>
+                            </svg>
+                        </button>
+                        <button type="button" class="nav-button" onclick="nextStep()">
+                            <svg viewBox="0 0 24 24" fill="currentColor">
+                                <path d="M10 6L8.59 7.41 13.17 12l-4.58 4.59L10 18l6-6z"/>
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- 步驟 5: 選擇聯絡人 -->
+                <div class="step" id="step5">
+                    <h2>步驟 5：選擇通知聯絡人</h2>
+                    
+                    <div class="form-group">
+                        <label>請選擇接收警報通知的聯絡人：</label>
+                        <div class="checkbox-group" id="contactsContainer">
+                            <!-- 聯絡人選項將由 JavaScript 動態載入 -->
+                        </div>
+                    </div>
+
+                    <!-- 導航按鈕 -->
+                    <div class="navigation-buttons">
+                        <button type="button" class="nav-button" onclick="prevStep()">
+                            <svg viewBox="0 0 24 24" fill="currentColor">
+                                <path d="M15.41 7.41L14 6l-6 6 6 6 1.41-1.41L10.83 12z"/>
+                            </svg>
+                        </button>
+                        <button type="button" class="nav-button" onclick="nextStep()">
+                            <svg viewBox="0 0 24 24" fill="currentColor">
+                                <path d="M10 6L8.59 7.41 13.17 12l-4.58 4.59L10 18l6-6z"/>
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- 步驟 6: 運作時間設定 -->
+                <div class="step" id="step6">
+                    <h2>步驟 6：運作時間設定</h2>
+                    
+                    <div class="form-group">
+                        <label for="startDateTime">開始時間 *</label>
+                        <input type="datetime-local" id="startDateTime" name="start_time" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label>每日運作時間</label>
+                        <div class="time-grid">
+                            <div>
+                                <label for="dailyStartTime">開始時間</label>
+                                <input type="time" id="dailyStartTime" name="daily_start_time" value="00:00">
+                            </div>
+                            <div>
+                                <label for="dailyEndTime">結束時間</label>
+                                <input type="time" id="dailyEndTime" name="daily_end_time" value="23:59">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 導航按鈕 -->
+                    <div class="navigation-buttons">
+                        <button type="button" class="nav-button" onclick="prevStep()">
+                            <svg viewBox="0 0 24 24" fill="currentColor">
+                                <path d="M15.41 7.41L14 6l-6 6 6 6 1.41-1.41L10.83 12z"/>
+                            </svg>
+                        </button>
+                        <button type="button" class="nav-button" onclick="nextStep()">
+                            <svg viewBox="0 0 24 24" fill="currentColor">
+                                <path d="M10 6L8.59 7.41 13.17 12l-4.58 4.59L10 18l6-6z"/>
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- 步驟 7: 通知時間設定 -->
+                <div class="step" id="step7">
+                    <h2>步驟 7：通知時間設定</h2>
+                    
+                    <div class="form-group">
+                        <label>通知時間範圍</label>
+                        <div class="time-grid">
+                            <div>
+                                <label for="notifyStartTime">通知開始時間</label>
+                                <input type="time" id="notifyStartTime" name="notify_start_time" value="08:00">
+                            </div>
+                            <div>
+                                <label for="notifyEndTime">通知結束時間</label>
+                                <input type="time" id="notifyEndTime" name="notify_end_time" value="18:00">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="notifyInterval">通知間隔（分鐘）</label>
+                        <select id="notifyInterval" name="notify_interval">
+                            <option value="5">5 分鐘</option>
+                            <option value="10" selected>10 分鐘</option>
+                            <option value="15">15 分鐘</option>
+                            <option value="30">30 分鐘</option>
+                            <option value="60">60 分鐘</option>
+                        </select>
+                    </div>
+
+                    <!-- 導航按鈕 -->
+                    <div class="navigation-buttons">
+                        <button type="button" class="nav-button" onclick="prevStep()">
+                            <svg viewBox="0 0 24 24" fill="currentColor">
+                                <path d="M15.41 7.41L14 6l-6 6 6 6 1.41-1.41L10.83 12z"/>
+                            </svg>
+                        </button>
+                        <button type="button" class="nav-button" onclick="nextStep()">
+                            <svg viewBox="0 0 24 24" fill="currentColor">
+                                <path d="M10 6L8.59 7.41 13.17 12l-4.58 4.59L10 18l6-6z"/>
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- 步驟 8: 確認與提交 -->
+                <div class="step" id="step8">
+                    <h2>步驟 8：確認專案資訊</h2>
+                    
+                    <div class="preview-section" id="previewSection">
+                        <!-- 預覽內容將由 JavaScript 動態生成 -->
+                    </div>
+
+                    <div class="submit-section">
+                        <button type="submit" class="submit-button">
+                            💾 儲存變更
+                        </button>
+                    </div>
+
+                    <!-- 導航按鈕 - 最後一頁只顯示左邊 -->
+                    <div class="navigation-buttons">
+                        <button type="button" class="nav-button" onclick="prevStep()">
+                            <svg viewBox="0 0 24 24" fill="currentColor">
+                                <path d="M15.41 7.41L14 6l-6 6 6 6 1.41-1.41L10.83 12z"/>
+                            </svg>
+                        </button>
+                        <div></div> <!-- 空的右側 -->
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- 火箭動畫元素 -->
+    <div class="rocket-animation" id="rocketAnimation">🚀</div>
+
+    <!-- 監視器爆炸動畫容器 -->
+    <div class="camera-explosion" id="cameraExplosion"></div>
+
+    <div class="progress-container">
+        <div class="progress-bar">
+            <div class="progress-bar-fill" id="progressBarFill"></div>
+            <div class="progress-text" id="progressText">1 / 8</div>
+        </div>
+    </div>
+
+    <script>
+        // 模擬資料
+        const mockCameras = [
+            { camera_id: 1, camera_name: "前門攝影機", location: "主入口", resolution: "1920x1080", status: "線上" },
+            { camera_id: 2, camera_name: "後門攝影機", location: "後方出入口", resolution: "1920x1080", status: "線上" },
+            { camera_id: 3, camera_name: "停車場攝影機", location: "停車場區域", resolution: "2560x1440", status: "線上" },
+            { camera_id: 4, camera_name: "辦公室攝影機", location: "辦公區域", resolution: "1920x1080", status: "離線" },
+            { camera_id: 5, camera_name: "倉庫攝影機", location: "倉儲區域", resolution: "1920x1080", status: "線上" }
+        ];
+
+        const mockModels = [
+            { model_id: 1, model_name: "人臉辨識", model_description: "識別和追蹤人臉，支援身份驗證" },
+            { model_id: 2, model_name: "車牌辨識", model_description: "自動識別車牌號碼，記錄進出車輛" },
+            { model_id: 3, model_name: "行為分析", model_description: "分析異常行為模式，如跌倒、打鬥等" },
+            { model_id: 4, model_name: "物體偵測", model_description: "偵測特定物體，如包裹、武器等" },
+            { model_id: 5, model_name: "人數統計", model_description: "統計區域內人數，監控人流密度" }
+        ];
+
+        const mockEvents = [
+            { event_id: 1, event_name: "入侵警報", event_description: "偵測到未授權人員進入禁區" },
+            { event_id: 2, event_name: "異常行為", event_description: "偵測到可疑或危險行為" },
+            { event_id: 3, event_name: "人員進入", event_description: "偵測到人員進入監控區域" },
+            { event_id: 4, event_name: "車輛進入", event_description: "偵測到車輛進入監控區域" },
+            { event_id: 5, event_name: "物品遺失", event_description: "偵測到物品被移動或遺失" },
+            { event_id: 6, event_name: "人數超標", event_description: "區域內人數超過設定上限" }
+        ];
+
+        const mockContacts = [
+            { contact_id: 1, contact_name: "張經理", contact_phone: "0912-345-678", contact_email: "manager@company.com" },
+            { contact_id: 2, contact_name: "李保全", contact_phone: "0923-456-789", contact_email: "security@company.com" },
+            { contact_id: 3, contact_name: "王工程師", contact_phone: "0934-567-890", contact_email: "engineer@company.com" },
+            { contact_id: 4, contact_name: "陳主任", contact_phone: "0945-678-901", contact_email: "director@company.com" }
+        ];
+
+        // 模擬現有專案資料
+        const mockProjectData = {
+            1: {
+                project_name: "前門監控系統",
+                project_description: "主入口人臉辨識與車牌識別系統",
+                project_status: "1",
+                camera_id: 1,
+                model_ids: [1, 2],
+                event_ids: [1, 3],
+                contact_ids: [1, 2],
+                start_time: "2024-01-15T08:00",
+                daily_start_time: "08:00",
+                daily_end_time: "18:00",
+                notify_start_time: "08:00",
+                notify_end_time: "18:00",
+                notify_interval: 10
+            },
+            2: {
+                project_name: "停車場安全監控",
+                project_description: "停車場區域異常行為偵測",
+                project_status: "1",
+                camera_id: 3,
+                model_ids: [2],
+                event_ids: [1, 2],
+                contact_ids: [1, 3],
+                start_time: "2024-01-10T00:00",
+                daily_start_time: "00:00",
+                daily_end_time: "23:59",
+                notify_start_time: "08:00",
+                notify_end_time: "18:00",
+                notify_interval: 15
+            },
+            3: {
+                project_name: "後門區域監控",
+                project_description: "後方出入口安全監控",
+                project_status: "0",
+                camera_id: 2,
+                model_ids: [1, 2, 3],
+                event_ids: [1],
+                contact_ids: [2],
+                start_time: "2024-01-12T06:00",
+                daily_start_time: "06:00",
+                daily_end_time: "22:00",
+                notify_start_time: "08:00",
+                notify_end_time: "18:00",
+                notify_interval: 10
+            }
+        };
+
+        // 全域變數
+        const steps = document.querySelectorAll(".step");
+        const progressBarFill = document.getElementById("progressBarFill");
+        const progressText = document.getElementById("progressText");
+
+        let currentStep = 0;
+        let projectId = null;
+
+        // 載入 header
+        function loadHeader() {
+            console.log('Header loaded');
+        }
+
+        // 選擇專案狀態
+        function selectStatus(status) {
+            // 移除所有選項的 selected 類別
+            document.querySelectorAll('.status-option').forEach(option => {
+                option.classList.remove('selected');
+            });
+            
+            // 添加選中狀態
+            event.currentTarget.classList.add('selected');
+            
+            // 設定 radio button
+            document.getElementById(status === '1' ? 'status_active' : 'status_inactive').checked = true;
+        }
+
+        // 獲取URL參數
+        function getUrlParameter(name) {
+            name = name.replace(/[\[]/, '\\[').replace(/[\]]/, '\\]');
+            var regex = new RegExp('[\\?&]' + name + '=([^&#]*)');
+            var results = regex.exec(location.search);
+            return results === null ? '' : decodeURIComponent(results[1].replace(/\+/g, ' '));
+        }
+
+        // 載入專案資料
+        function loadProjectData() {
+            projectId = getUrlParameter('id');
+            if (projectId && mockProjectData[projectId]) {
+                const data = mockProjectData[projectId];
+                
+                // 填入基本資訊
+                document.getElementById('projectName').value = data.project_name;
+                document.getElementById('projectDescription').value = data.project_description;
+                
+                // 設定專案狀態
+                selectStatus(data.project_status);
+                document.getElementById(data.project_status === '1' ? 'status_active' : 'status_inactive').checked = true;
+                
+                // 設定攝影機
+                document.getElementById('cameraSelect').value = data.camera_id;
+                
+                // 設定時間
+                document.getElementById('startDateTime').value = data.start_time;
+                document.getElementById('dailyStartTime').value = data.daily_start_time;
+                document.getElementById('dailyEndTime').value = data.daily_end_time;
+                document.getElementById('notifyStartTime').value = data.notify_start_time;
+                document.getElementById('notifyEndTime').value = data.notify_end_time;
+                document.getElementById('notifyInterval').value = data.notify_interval;
+                
+                // 設定選中的模型
+                setTimeout(() => {
+                    data.model_ids.forEach(id => {
+                        const checkbox = document.getElementById(`model_${id}`);
+                        if (checkbox) checkbox.checked = true;
+                    });
+                    
+                    // 設定選中的事件
+                    data.event_ids.forEach(id => {
+                        const checkbox = document.getElementById(`event_${id}`);
+                        if (checkbox) checkbox.checked = true;
+                    });
+                    
+                    // 設定選中的聯絡人
+                    data.contact_ids.forEach(id => {
+                        const checkbox = document.getElementById(`contact_${id}`);
+                        if (checkbox) checkbox.checked = true;
+                    });
+                    
+                    // 更新攝影機資訊
+                    const cameraSelect = document.getElementById('cameraSelect');
+                    if (cameraSelect.value) {
+                        const event = new Event('change');
+                        cameraSelect.dispatchEvent(event);
+                    }
+                }, 100);
+            }
+        }
+
+        // 更新進度條
+        function updateProgress() {
+            const percentage = ((currentStep + 1) / steps.length) * 100;
+            progressBarFill.style.width = percentage + "%";
+            progressText.textContent = `${currentStep + 1} / ${steps.length}`;
+        }
+
+        // 顯示指定步驟
+        function showStep(index) {
+            steps.forEach((step, i) => {
+                step.classList.toggle("active", i === index);
+            });
+
+            updateProgress();
+        }
+
+        // 下一步
+        function nextStep() {
+            if (validateCurrentStep() && currentStep < steps.length - 1) {
+                currentStep++;
+                showStep(currentStep);
+                
+                // 如果是最後一步，更新預覽
+                if (currentStep === steps.length - 1) {
+                    updatePreview();
+                }
+            }
+        }
+
+        // 上一步
+        function prevStep() {
+            if (currentStep > 0) {
+                currentStep--;
+                showStep(currentStep);
+            }
+        }
+
+        // 火箭爆炸動畫
+        function playRocketExplosion() {
+            const rocket = document.getElementById('rocketAnimation');
+            const explosion = document.getElementById('cameraExplosion');
+            
+            // 顯示火箭並開始上升動畫
+            rocket.style.opacity = '1';
+            rocket.classList.add('rocket-launch');
+            
+            // 2秒後開始監視器爆炸效果
+            setTimeout(() => {
+                // 創建多個監視器圖標
+                for (let i = 0; i < 12; i++) {
+                    const camera = document.createElement('div');
+                    camera.className = 'camera-icon camera-explode';
+                    camera.innerHTML = '📹';
+                    
+                    // 隨機方向和距離
+                    const angle = (i * 30) * Math.PI / 180; // 每30度一個
+                    const distance = 100 + Math.random() * 100; // 100-200px距離
+                    const x = Math.cos(angle) * distance;
+                    const y = Math.sin(angle) * distance;
+                    
+                    camera.style.setProperty('--x', x + 'px');
+                    camera.style.setProperty('--y', y + 'px');
+                    
+                    explosion.appendChild(camera);
+                }
+                
+                // 3秒後清理動畫元素
+                setTimeout(() => {
+                    rocket.classList.remove('rocket-launch');
+                    rocket.style.opacity = '0';
+                    explosion.innerHTML = '';
+                }, 3000);
+            }, 2000);
+        }
+
+        // 驗證當前步驟
+        function validateCurrentStep() {
+            const currentStepElement = steps[currentStep];
+            const requiredFields = currentStepElement.querySelectorAll('[required]');
+            
+            for (let field of requiredFields) {
+                if (!field.value.trim()) {
+                    alert('請填寫所有必填欄位');
+                    field.focus();
+                    return false;
+                }
+            }
+
+            // 特殊驗證
+            if (currentStep === 0) { // 第一步：檢查專案狀態
+                const statusChecked = document.querySelector('input[name="project_status"]:checked');
+                if (!statusChecked) {
+                    alert('請選擇專案狀態');
+                    return false;
+                }
+            }
+
+            if (currentStep === 2) { // AI 模型步驟
+                const checkedModels = currentStepElement.querySelectorAll('input[name="model_id"]:checked');
+                if (checkedModels.length === 0) {
+                    alert('請至少選擇一個 AI 模型');
+                    return false;
+                }
+            }
+
+            if (currentStep === 4) { // 聯絡人步驟
+                const checkedContacts = currentStepElement.querySelectorAll('input[name="contact_id"]:checked');
+                if (checkedContacts.length === 0) {
+                    alert('請至少選擇一個聯絡人');
+                    return false;
+                }
+            }
+
+            return true;
+        }
+
+        // 載入攝影機選項
+        function loadCameras() {
+            const cameraSelect = document.getElementById('cameraSelect');
+            cameraSelect.innerHTML = '<option value="">-- 請選擇攝影機 --</option>';
+            
+            mockCameras.forEach(camera => {
+                const option = document.createElement('option');
+                option.value = camera.camera_id;
+                option.textContent = `${camera.camera_name} (${camera.location})`;
+                option.dataset.camera = JSON.stringify(camera);
+                cameraSelect.appendChild(option);
+            });
+
+            // 綁定選擇事件
+            cameraSelect.addEventListener('change', function() {
+                const cameraInfo = document.getElementById('cameraInfo');
+                if (this.value) {
+                    const camera = JSON.parse(this.selectedOptions[0].dataset.camera);
+                    cameraInfo.innerHTML = `
+                        <strong>${camera.camera_name}</strong><br>
+                        📍 位置：${camera.location}<br>
+                        📺 解析度：${camera.resolution}<br>
+                        🔴 狀態：<span style="color: ${camera.status === '線上' ? '#ffffff' : '#dc3545'}">${camera.status}</span>
+                    `;
+                } else {
+                    cameraInfo.textContent = '請先選擇攝影機以查看詳細資訊';
+                }
+            });
+        }
+
+        // 載入 AI 模型選項
+        function loadModels() {
+            const modelsContainer = document.getElementById('modelsContainer');
+            modelsContainer.innerHTML = '';
+            
+            mockModels.forEach(model => {
+                const checkboxItem = document.createElement('div');
+                checkboxItem.className = 'checkbox-item';
+                
+                checkboxItem.innerHTML = `
+                    <input type="checkbox" id="model_${model.model_id}" name="model_id" value="${model.model_id}">
+                    <div class="checkbox-content">
+                        <h4>${model.model_name}</h4>
+                        <p>${model.model_description}</p>
+                    </div>
+                `;
+                
+                modelsContainer.appendChild(checkboxItem);
+            });
+        }
+
+        // 載入事件選項
+        function loadEvents() {
+            const eventsContainer = document.getElementById('eventsContainer');
+            eventsContainer.innerHTML = '';
+            
+            mockEvents.forEach(event => {
+                const checkboxItem = document.createElement('div');
+                checkboxItem.className = 'checkbox-item';
+                
+                checkboxItem.innerHTML = `
+                    <input type="checkbox" id="event_${event.event_id}" name="event_id" value="${event.event_id}">
+                    <div class="checkbox-content">
+                        <h4>${event.event_name}</h4>
+                        <p>${event.event_description}</p>
+                    </div>
+                `;
+                
+                eventsContainer.appendChild(checkboxItem);
+            });
+        }
+
+        // 載入聯絡人選項
+        function loadContacts() {
+            const contactsContainer = document.getElementById('contactsContainer');
+            contactsContainer.innerHTML = '';
+            
+            mockContacts.forEach(contact => {
+                const checkboxItem = document.createElement('div');
+                checkboxItem.className = 'checkbox-item';
+                
+                checkboxItem.innerHTML = `
+                    <input type="checkbox" id="contact_${contact.contact_id}" name="contact_id" value="${contact.contact_id}">
+                    <div class="checkbox-content">
+                        <h4>${contact.contact_name}</h4>
+                        <p>📞 ${contact.contact_phone}<br>📧 ${contact.contact_email}</p>
+                    </div>
+                `;
+                
+                contactsContainer.appendChild(checkboxItem);
+            });
+        }
+
+        // 更新預覽
+        function updatePreview() {
+            const formData = new FormData(document.getElementById('multiStepForm'));
+            const previewSection = document.getElementById('previewSection');
+            
+            // 獲取選中的項目
+            const selectedCamera = mockCameras.find(c => c.camera_id == formData.get('camera_id'));
+            const selectedModels = Array.from(document.querySelectorAll('input[name="model_id"]:checked'))
+                .map(el => mockModels.find(m => m.model_id == el.value)?.model_name).filter(Boolean);
+            const selectedEvents = Array.from(document.querySelectorAll('input[name="event_id"]:checked'))
+                .map(el => mockEvents.find(e => e.event_id == el.value)?.event_name).filter(Boolean);
+            const selectedContacts = Array.from(document.querySelectorAll('input[name="contact_id"]:checked'))
+                .map(el => mockContacts.find(c => c.contact_id == el.value)?.contact_name).filter(Boolean);
+            
+            const projectStatus = document.querySelector('input[name="project_status"]:checked');
+            const statusText = projectStatus ? (projectStatus.value === '1' ? '啟用' : '停用') : '未設定';
+
+            previewSection.innerHTML = `
+                <h3 style="margin-top: 0; color: #ffffff;">📋 專案資訊預覽</h3>
+                
+                <div class="preview-item">
+                    <span class="preview-label">專案名稱:</span>
+                    <span class="preview-value">${formData.get('project_name') || '未設定'}</span>
+                </div>
+                
+                <div class="preview-item">
+                    <span class="preview-label">專案描述:</span>
+                    <span class="preview-value">${formData.get('project_description') || '無'}</span>
+                </div>
+                
+                <div class="preview-item">
+                    <span class="preview-label">專案狀態:</span>
+                    <span class="preview-value">${statusText}</span>
+                </div>
+                
+                <div class="preview-item">
+                    <span class="preview-label">攝影機:</span>
+                    <span class="preview-value">${selectedCamera ? selectedCamera.camera_name : '未選擇'}</span>
+                </div>
+                
+                <div class="preview-item">
+                    <span class="preview-label">AI 模型:</span>
+                    <span class="preview-value">${selectedModels.length > 0 ? selectedModels.join(', ') : '未選擇'}</span>
+                </div>
+                
+                <div class="preview-item">
+                    <span class="preview-label">監控事件:</span>
+                    <span class="preview-value">${selectedEvents.length > 0 ? selectedEvents.join(', ') : '未選擇'}</span>
+                </div>
+                
+                <div class="preview-item">
+                    <span class="preview-label">通知聯絡人:</span>
+                    <span class="preview-value">${selectedContacts.length > 0 ? selectedContacts.join(', ') : '未選擇'}</span>
+                </div>
+                
+                <div class="preview-item">
+                    <span class="preview-label">開始時間:</span>
+                    <span class="preview-value">${formData.get('start_time') || '未設定'}</span>
+                </div>
+                
+                <div class="preview-item">
+                    <span class="preview-label">每日運作時間:</span>
+                    <span class="preview-value">${formData.get('daily_start_time')} - ${formData.get('daily_end_time')}</span>
+                </div>
+                
+                <div class="preview-item">
+                    <span class="preview-label">通知時間:</span>
+                    <span class="preview-value">${formData.get('notify_start_time')} - ${formData.get('notify_end_time')}</span>
+                </div>
+                
+                <div class="preview-item">
+                    <span class="preview-label">通知間隔:</span>
+                    <span class="preview-value">${formData.get('notify_interval')} 分鐘</span>
+                </div>
+            `;
+        }
+
+        // 表單提交
+        document.getElementById('multiStepForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            if (!validateCurrentStep()) {
+                return;
+            }
+
+            // 收集表單資料
+            const formData = new FormData(this);
+            const projectStatus = document.querySelector('input[name="project_status"]:checked');
+            
+            const projectData = {
+                project_id: projectId,
+                project_name: formData.get('project_name'),
+                project_description: formData.get('project_description'),
+                project_status: projectStatus ? projectStatus.value : '0',
+                camera_id: parseInt(formData.get('camera_id')),
+                model_ids: Array.from(document.querySelectorAll('input[name="model_id"]:checked')).map(el => parseInt(el.value)),
+                event_ids: Array.from(document.querySelectorAll('input[name="event_id"]:checked')).map(el => parseInt(el.value)),
+                contact_ids: Array.from(document.querySelectorAll('input[name="contact_id"]:checked')).map(el => parseInt(el.value)),
+                start_time: formData.get('start_time'),
+                daily_start_time: formData.get('daily_start_time'),
+                daily_end_time: formData.get('daily_end_time'),
+                notify_start_time: formData.get('notify_start_time'),
+                notify_end_time: formData.get('notify_end_time'),
+                notify_interval: parseInt(formData.get('notify_interval'))
+            };
+
+            console.log('更新專案資料:', projectData);
+
+            // 模擬提交
+            const submitButton = document.querySelector('.submit-button');
+            const originalText = submitButton.textContent;
+            submitButton.disabled = true;
+            submitButton.textContent = '🔄 儲存中...';
+
+            // 播放火箭爆炸動畫
+            playRocketExplosion();
+
+            setTimeout(() => {
+                alert('✅ 專案更新成功！即將跳轉到主頁面...');
+                window.location.href = 'main.html';
+            }, 5000); // 延長到5秒讓動畫播放完
+
+        });
+
+        // 初始化
+        window.onload = function() {
+            loadHeader();
+            loadCameras();
+            loadModels();
+            loadEvents();
+            loadContacts();
+            loadProjectData(); // 載入現有專案資料
+            
+            showStep(currentStep);
+        };
+    </script>
+
+</body>
+</html>

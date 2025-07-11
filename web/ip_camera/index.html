@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8">
+  <title>全方位AI代理監控系統</title>
+  <link rel="icon" href="images/title icon.png" type="image/png">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="static/css/index.css">
+</head>
+<body>
+
+  <!-- 頁首長條 -->
+  <header class="header-bar">
+    <div class="header-title">全方位AI代理監控系統</div>
+
+    <!-- === 正中央圖片區塊 === -->
+    <div class="header-center-logo">
+      <img src="static/images/AI Monitor white.png" alt="中央Logo">
+	  
+    </div>
+
+    <button id="btn_login" class="btn_login">登入</button>
+  </header>
+
+  <!-- 左側圖片 -->
+  <div class="image-left" id="fadeImage">
+    <img src="C:\Users\user\OneDrive\桌面\科技感背景.jpg" alt="camera">
+  </div>
+
+  <!-- 右下圖片 
+  <div class="image-right" id="fadeImageSecond">
+    <img src="static/background/many.jpg" alt="monitor">
+  </div>-->
+
+  <!-- 第一區塊 -->
+  <div class="section white-section"></div>
+
+  <!-- 中間動畫內容 -->
+  <div class="content">
+	<h1><span id="typewriter"></span><h1>
+  </div>
+
+  <!-- 第二區塊 -->
+  <div class="section gray-section"></div>
+
+</body>
+</html>
+
+
+  <script>
+    /********** 打字動畫 **********/
+    const text = "智慧影像守護安全，精準辨識掌握未來";
+    const target = document.getElementById("typewriter");
+    let index = 0;
+    let isDeleting = false;
+
+    function typeEffect() {
+      if (!isDeleting) {
+        target.textContent = text.slice(0, index + 1);
+        index++;
+        if (index === text.length) {
+          setTimeout(() => isDeleting = true, 1000);
+        }
+      } else {
+        target.textContent = text.slice(0, index - 1);
+        index--;
+        if (index === 0) {
+          isDeleting = false;
+        }
+      }
+      const delay = isDeleting ? 25 : 50;
+      setTimeout(typeEffect, delay);
+    }
+
+    typeEffect();
+
+    /********** 捲動時圖片與按鈕淡出 **********/
+    window.addEventListener('scroll', () => {
+      const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
+      const fadeStart = 0;
+      const fadeEnd = 500;
+      let opacity = 1;
+
+      if (scrollTop > fadeStart) {
+        opacity = 1 - (scrollTop - fadeStart) / (fadeEnd - fadeStart);
+        opacity = Math.max(opacity, 0);
+      }
+
+      document.getElementById('fadeImage').style.opacity = opacity;
+      document.getElementById('fadeImageSecond').style.opacity = opacity;
+      document.querySelector('.content').style.opacity = opacity;
+    });
+
+    /********** 登入流程 **********/
+    const clientId = '2006911351';
+	
+	const redirectUri = 'http://210.240.202.108';
+    //const redirectUri = 'http://aimonitor.dpdns.org';	
+	const API_BASE = 'http://210.240.202.108:5000';
+    //const API_BASE = 'http://aimonitor.dpdns.org';
+
+    document.getElementById('btn_login').onclick = () => {
+      const state = Math.random().toString(36).substring(2);
+      const scope = "profile";
+      const authUrl = `https://access.line.me/oauth2/v2.1/authorize?response_type=code&client_id=${clientId}&redirect_uri=${encodeURIComponent(redirectUri)}&state=${state}&scope=${scope}`;
+      window.location.href = authUrl;
+    };
+
+    /********** callback 接收 **********/
+    const params = new URLSearchParams(window.location.search);
+    if (params.has('code')) {
+      fetch(`${API_BASE}/callback` + window.location.search)
+        .then(response => response.json())
+        .then(data => {
+          localStorage.setItem('jwt', data.token);
+          if (data.is_new_user) {
+            alert(`${data.message}`);
+            window.location.href = 'setName.html';
+          } else {
+            alert("Hello, user");
+            window.location.href = 'main.html';
+          }
+        })
+        .catch(error => {
+          alert("連線錯誤：" + error);
+          window.location.href = 'index.html';
+        });
+    }
+  </script>
+
+</body>
+</html>

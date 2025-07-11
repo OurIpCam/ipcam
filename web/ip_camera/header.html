@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<link rel="stylesheet" href="static/css/header.css">
+    <title>ip camera</title>
+</head>
+<body>
+    <!-- 頁首長條 -->
+    <header class="header-bar">
+		<div class="header-title">全方位AI代理監控系統</div>
+
+        <!-- === 正中央圖片區塊 === -->
+        <div class="header-center-logo">
+            <img src="static/images/AI Monitor white.png" alt="中央Logo">
+        </div>
+
+        <!-- 整合的頭像區塊 -->
+        <div class="head">
+            <button id="profile-btn"></button>
+            <img class="profile-pic-main" src="/placeholder.svg" alt="頭像">
+        </div>
+
+        
+
+        <div class="menu" id="profile-menu">
+            <div class="user-info">
+                <img class="profile-pic-menu" src="/placeholder.svg" alt="頭像">
+				<div class="name"></div>
+			</div>
+            <div class="logout">登出</div>
+        </div>
+    </header>
+
+    <!-- 側邊選單遮罩 -->
+    <div class="sidebar-overlay" onclick="closeSidebar()"></div>
+
+    <!-- 側邊選單 -->
+    <div class="sidebar" id="sidebar">
+        <div class="sidebar-content">
+            <a href="main.html" class="sidebar-item active" onclick="navigateWithAnimation(event, this, 'main.html')">
+                <svg class="sidebar-icon" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zM9 17H7v-7h2v7zm4 0h-2V7h2v10zm4 0h-2v-4h2v4z"/>
+                </svg>
+                <span class="sidebar-text">專案</span>
+            </a>
+			
+            <a href="camera.html" class="sidebar-item" onclick="navigateWithAnimation(event, this, 'camera.html')">
+                <svg class="sidebar-icon" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M17 10.5V7c0-.55-.45-1-1-1H4c-.55 0-1 .45-1 1v10c0 .55.45 1 1 1h12c.55 0 1-.45 1-1v-3.5l4 4v-11l-4 4z"/>
+                </svg>
+                <span class="sidebar-text">攝影機</span>
+            </a>
+
+            <a href="contact.html" class="sidebar-item" onclick="navigateWithAnimation(event, this, 'contact.html')">
+                <svg class="sidebar-icon" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M16 4c0-1.11.89-2 2-2s2 .89 2 2-.89 2-2 2-2-.89-2-2zm4 18v-6h2.5l-2.54-7.63A1.5 1.5 0 0 0 18.54 8H17c-.8 0-1.54.37-2.01 1l-2.41 3.19c-.32.42-.26 1.02.14 1.37l2.28 2v4.44h2zm-7.5-10.5c.83 0 1.5-.67 1.5-1.5s-.67-1.5-1.5-1.5S11 9.17 11 10s.67 1.5 1.5 1.5zM5.5 6c1.11 0 2-.89 2-2s-.89-2-2-2-2 .89-2 2 .89 2 2 2zm2 16v-7H9V9c0-1.1-.9-2-2-2H4c-1.1 0-2 .9-2 2v6h1.5v7h4z"/>
+                </svg>
+                <span class="sidebar-text">聯絡人</span>
+            </a>
+
+            <a href="set.html" class="sidebar-item" onclick="navigateWithAnimation(event, this, 'set.html')">
+                <svg class="sidebar-icon" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/>
+                </svg>
+                <span class="sidebar-text">異常通知查詢</span>
+            </a>
+        </div>
+    </div>
+</body>
+<script src="static/js/header.js"></script>
+</html>

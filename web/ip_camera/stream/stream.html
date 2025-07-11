@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8">
+  <title>監視器即時串流 (fetch + .then + API_BASE)</title>
+  <style>
+    body { font-family: sans-serif; padding: 20px; }
+    #video { width: 640px; height: 360px; background: #000; margin-top:10px; }
+    #status { margin-top: 8px; color: #555; }
+  </style>
+  <!-- 引入 hls.js -->
+  <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
+</head>
+<body>
+  <h2>按下播放按鈕開始串流</h2>
+  <button id="playBtn">播放</button>
+  <div id="status">尚未啟動</div>
+  <video id="video" controls></video>
+
+  <script>
+    // 把 API 伺服器的 Base URL 放這裡
+    const API_BASE = "http://210.240.202.108:5000";
+
+    var playBtn   = document.getElementById('playBtn');
+    var statusDiv = document.getElementById('status');
+    var video     = document.getElementById('video');
+    var hls       = null;
+
+    playBtn.addEventListener('click', function(){
+      playBtn.disabled = true;
+      statusDiv.textContent = '啟動串流中…';
+
+      // 呼叫後端 /streaming API 啟動 FFmpeg 產生 HLS
+      fetch(`${API_BASE}/streaming`)
+      .then(function(res){
+        if (!res.ok) throw new Error('API 回傳 HTTP ' + res.status);
+        statusDiv.textContent = '串流已啟動，載入 HLS…';
+        // HLS 清單的完整 URL
+        var hlsUrl = API_BASE + '/stream/index.m3u8';
+
+        // 如果瀏覽器不內建 HLS，使用 hls.js
+        if (Hls.isSupported()) {
+          if (!hls) {
+            hls = new Hls();
+            hls.attachMedia(video);
+
+            hls.on(Hls.Events.MANIFEST_PARSED, function(){
+              statusDiv.textContent = '載入完成，開始播放';
+              video.play();
+            });
+
+            hls.on(Hls.Events.ERROR, function(event, data){
+              console.error('HLS.js 錯誤:', data);
+              statusDiv.textContent = '播放錯誤，請查看 Console';
+            });
+          }
+          hls.loadSource(hlsUrl);
+        }
+        // 如果是 Safari / iOS 原生支援 HLS
+        else if (video.canPlayType('application/vnd.apple.mpegurl')) {
+          video.src = hlsUrl;
+          video.addEventListener('loadedmetadata', function(){
+            statusDiv.textContent = '載入完成，開始播放';
+            video.play();
+          });
+        }
+        else {
+          throw new Error('此瀏覽器不支援 HLS.js 或原生 HLS');
+        }
+      })
+      .catch(function(err){
+        console.error(err);
+        statusDiv.textContent = '發生錯誤：' + err.message;
+      })
+      .finally(function(){
+        playBtn.disabled = false;
+      });
+    });
+  </script>
+</body>
+</html>
