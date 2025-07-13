@@ -118,6 +118,8 @@ def sha256_password(password):
 #判斷照片附檔名是否允許
 def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
+def clean_filename(filename):
+    return re.sub(r'[^\u4e00-\u9fa5\w\.\- ]', '', filename)
 
 #初始化
 @app.route('/admin/init', methods=["POST"])
@@ -199,29 +201,30 @@ def get_fixed_admin_token():
         cursor.close()
         return jsonify({"token": token}), 200
     
-#管理者登出ok
+#管理者登出
 @app.route('/admin/logout', methods=["POST"])
 def admin_logout():
     data = request.get_json()
     token = data.get('token', '')
 
     is_valid, payload = verify_admin_token(token)
-    
     if not is_valid:
         return jsonify({"error": "無效的 Token"}), 401
 
-    admin_id = payload.get('admin_id', '') 
-    if admin_id == 2:
-        return jsonify({"error": "固定管理者不能登出"}), 403
+    admin_id = int(payload.get('admin_id', 0))
 
     cursor = db.cursor()
-    cursor.execute("UPDATE Admin SET token = NULL WHERE admin_id = %s", (admin_id,))
-    db.commit()
-    cursor.close()
 
+    print("admin_id:", admin_id)
+    if admin_id != 2:
+        cursor.execute("UPDATE Admin SET token = NULL WHERE admin_id = %s", (admin_id,))
+        db.commit()
+        print("清除 token")
+
+    cursor.close()
     return '', 200
 
-#使用者登入#ok
+#使用者登入
 @app.route('/callback')
 def callback():
     code = request.args.get('code')
@@ -283,7 +286,7 @@ def callback():
             "token": token
         }),200
        
-#設定名字#ok
+#設定名字
 @app.route('/set_name', methods=['POST'])
 def set_name():
     data = request.get_json()
@@ -312,7 +315,7 @@ def set_name():
     cursor.close()
     return jsonify({"token" : token}),200
 
-#取得使用者#ok
+#取得使用者
 @app.route('/user', methods=["POST"])
 def user():
     data = request.get_json()
@@ -335,7 +338,7 @@ def user():
         #"token_expiration": expiration_time
     }),200
 
-#登出#ok
+#登出
 @app.route('/logout', methods=["POST"])
 def logout():
     data = request.get_json()
@@ -353,7 +356,7 @@ def logout():
     cursor.close()
     return '', 200
 
-#新增聯絡人#ok
+#新增聯絡人
 @app.route('/contact/create', methods=["POST"])
 def create_contact():
     data = request.get_json()
@@ -390,7 +393,7 @@ def create_contact():
 
     return '', 200
 
-#刪除聯絡人#ok
+#刪除聯絡人
 @app.route('/contact/delete', methods=["DELETE"])
 def delete_contact():
     data = request.get_json()
@@ -422,7 +425,7 @@ def delete_contact():
 
     return '', 200
 
-#修改聯絡人#ok
+#修改聯絡人
 @app.route('/contact/update', methods=["POST"])
 def update_contact_name():
     data = request.get_json()
@@ -451,7 +454,7 @@ def update_contact_name():
     db.commit()
     return '', 200
 
-#讀取聯絡人#ok
+#讀取聯絡人
 @app.route('/contact', methods=["POST"])
 def list_contacts():
     data = request.get_json()
@@ -470,7 +473,7 @@ def list_contacts():
         "contacts": contacts
     }),200
 
-#新增攝影機#ok
+#新增攝影機
 @app.route('/camera/create', methods=["POST"])
 def create_camera():
     data = request.get_json()
@@ -503,7 +506,7 @@ def create_camera():
     cursor.close()
     return '', 200
 
-#刪除攝影機#ok
+#刪除攝影機
 @app.route('/camera/delete', methods=['DELETE'])
 def delete_camera():
     data = request.get_json()
@@ -537,7 +540,7 @@ def delete_camera():
     cursor.close()
     return '', 200
 
-#修改攝影機#ok
+#修改攝影機
 @app.route('/camera/update', methods=["POST"])
 def update_camera():
     data = request.get_json()
@@ -596,7 +599,7 @@ def update_camera():
     cursor.close()
     return '', 200
 
-#讀取攝影機#ok
+#讀取攝影機
 @app.route('/camera', methods=["POST"])
 def cameras():
     data = request.get_json()
@@ -750,7 +753,6 @@ def delete_model():
     return '', 200
 
 #修改模型
-'''
 @app.route('/model/update', methods=["POST"])
 def update_model():
     print("收到的欄位：", request.form.to_dict())
@@ -837,7 +839,7 @@ def update_model():
         return '', 200
     else:
         return jsonify({"error": "更新後的模型資料無法查詢"}), 500
-'''
+
 #讀取模型
 @app.route('/model', methods=["POST"])
 def list_models():
@@ -2021,10 +2023,6 @@ def streaming():
 '''
 
 #抓取照片
-def clean_filename(filename):
-    # 只保留中文、英數、底線、點、空白、減號
-    return re.sub(r'[^\u4e00-\u9fa5\w\.\- ]', '', filename)
-
 @app.route('/upload/photo', methods=['POST'])
 def upload_photo():
     if 'file' not in request.files:
@@ -2041,7 +2039,6 @@ def upload_photo():
         file.save(save_path)
 
         return jsonify({
-            "message": "上傳成功",
             "filename": cleaned_name,
             "path": save_path.replace("\\", "/")
         }), 200
@@ -2051,7 +2048,6 @@ def upload_photo():
 #測試
 @app.route('/generate_test_token', methods=['GET'])
 def generate_test_token():
-    # 模擬一個尚未註冊過的使用者
     line_user_id = 'U123456789012345679'
     token = generate_token('', '', line_user_id)
     return jsonify({"token": token})
@@ -2081,8 +2077,6 @@ def test_callback():
         })
     else:
         return jsonify({"message": "找不到使用者"}), 404
-
-
 
 if __name__ == '__main__':
     #init_admin()
