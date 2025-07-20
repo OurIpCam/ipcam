@@ -215,11 +215,9 @@ def admin_logout():
 
     cursor = db.cursor()
 
-    print("admin_id:", admin_id)
     if admin_id != 2:
         cursor.execute("UPDATE Admin SET token = NULL WHERE admin_id = %s", (admin_id,))
         db.commit()
-        print("清除 token")
 
     cursor.close()
     return '', 200
@@ -942,8 +940,9 @@ def create_project():
             continue
 
         event_name = row['event_name']
-        notification_content = custom_msg or f"專案「{project_name}」偵測到事件「{event_name}」"
-
+        
+        #改這裡 ➔ 只存簡短的事件名稱或自訂訊息
+        notification_content = custom_msg or event_name
         cursor.execute("""
             INSERT INTO EventProjectRelations (event_id, project_id, notification_content)
             VALUES (%s, %s, %s)
@@ -1824,8 +1823,8 @@ def webhook():
     return "OK"
 
 #綁定
-@app.route("/bind_line_id", methods=["POST"])
-def bind_line_id():
+@app.route("/bind_message_line_id", methods=["POST"])
+def bind_message_line_id():
     data = request.get_json()
     token = data.get("token", "")
     messaging_user_id = data.get("messaging_user_id", "")
@@ -1834,15 +1833,17 @@ def bind_line_id():
     if not is_valid:
         return jsonify({"error": payload}), 401
 
-    user_id = payload.get("user_id")  # ⭐ 使用 user_id
+    user_id = payload.get("user_id")
     if not user_id or not messaging_user_id:
         return jsonify({"error": "缺少必要欄位"}), 400
 
     cursor = db.cursor()
     try:
-        cursor.execute("UPDATE Users SET line_id = %s WHERE user_id = %s", (messaging_user_id, user_id))
+        cursor.execute("""
+            UPDATE Users SET message_line_id = %s WHERE user_id = %s
+        """, (messaging_user_id, user_id))
         db.commit()
-        return jsonify({"message": "綁定成功"}), 200
+        return jsonify({"message": "Message API 綁定成功"}), 200
     except Exception as e:
         db.rollback()
         return jsonify({"error": str(e)}), 500
@@ -1873,15 +1874,11 @@ def create_abnormal_event():
     project_id = data.get("project_id")
     event_id = data.get("event_id")
     picture_url = data.get("picture_url", "").strip()
-    occurred_at = data.get("occurred_at")
 
-    if not all([project_id, event_id, picture_url, occurred_at]):
+    if not all([project_id, event_id, picture_url]):
         return jsonify({"error": "缺少必要欄位"}), 400
 
-    try:
-        datetime.datetime.strptime(occurred_at, "%Y-%m-%d %H:%M:%S")
-    except ValueError:
-        return jsonify({"error": "發生時間格式錯誤，需為 YYYY-MM-DD HH:MM:SS"}), 400
+    occurred_at = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
     cursor = db.cursor(pymysql.cursors.DictCursor)
 
@@ -1892,7 +1889,6 @@ def create_abnormal_event():
             WHERE project_id = %s AND event_id = %s
         """, (project_id, event_id))
         row = cursor.fetchone()
-
         if not row:
             cursor.close()
             return jsonify({"error": "找不到通知內容"}), 404
@@ -1901,7 +1897,6 @@ def create_abnormal_event():
 
         cursor.execute("SELECT project_name, user_id FROM Projects WHERE project_id = %s", (project_id,))
         project = cursor.fetchone()
-
         if not project:
             cursor.close()
             return jsonify({"error": "找不到該專案"}), 404
@@ -1910,14 +1905,16 @@ def create_abnormal_event():
         owner_id = project["user_id"]
 
         cursor.execute("""
-            SELECT u.line_id
+            SELECT COALESCE(u.message_line_id, u.line_id) AS line_id
             FROM ContactProjectRelations cp
             JOIN Contacts c ON cp.contact_id = c.contact_id AND cp.project_id = %s
             JOIN Users u ON c.user_id = u.user_id
         """, (project_id,))
         contacts = cursor.fetchall()
 
-        cursor.execute("SELECT line_id FROM Users WHERE user_id = %s", (owner_id,))
+        cursor.execute("""
+            SELECT COALESCE(message_line_id, line_id) AS line_id FROM Users WHERE user_id = %s
+        """, (owner_id,))
         owner = cursor.fetchone()
 
         cursor.close()
@@ -1936,7 +1933,6 @@ def create_abnormal_event():
         """, (project_id, event_id, picture_url, occurred_at))
         db.commit()
         cursor.close()
-
         short_url = shorten_url(picture_url)
 
         message = (
@@ -1958,6 +1954,7 @@ def create_abnormal_event():
         db.rollback()
         cursor.close()
         return jsonify({"error": f"發送通知失敗: {str(e)}"}), 500
+
 
 #即時串流(可能要改、因為改成樹梅派)
 '''
