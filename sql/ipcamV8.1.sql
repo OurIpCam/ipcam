@@ -7,7 +7,7 @@ CREATE TABLE Admin (
 CREATE TABLE Users (
     user_id INT PRIMARY KEY, 
     line_id VARCHAR(33) NOT NULL,
-    message_line_id VARCHAR(33) NOT NULL,
+    message_line_id VARCHAR(33) DEFAULT NULL,
     user_name VARCHAR(20),      
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     token TEXT
