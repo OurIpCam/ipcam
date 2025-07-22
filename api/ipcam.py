@@ -11,6 +11,7 @@ from werkzeug.utils import secure_filename
 import paramiko
 import datetime
 import re
+import uuid
 
 app = Flask(__name__)
 app.secret_key = os.urandom(24) 
@@ -148,7 +149,7 @@ def init_admin_password():
 
     return jsonify({"message": "初始化成功"}), 200
 
-# 管理者登入
+#管理者登入
 @app.route('/admin/login', methods=["POST"])
 def admin_login():
     data = request.get_json()
@@ -471,7 +472,7 @@ def list_contacts():
         "contacts": contacts
     }),200
 
-#新增攝影機
+#新增攝影機(有改)
 @app.route('/camera/create', methods=["POST"])
 def create_camera():
     data = request.get_json()
@@ -482,7 +483,6 @@ def create_camera():
         return '', 401
 
     user_id = payload.get("user_id")
-
     camera_name = data.get("camera_name", "").strip()
     brand = data.get("brand", "").strip()
     model = data.get("model", "").strip()
@@ -490,21 +490,43 @@ def create_camera():
     camera_username = data.get("camera_username", "").strip()
     camera_password = data.get("camera_password", "").strip()
     rtsp_url = data.get("rtsp_url", "").strip()
+    device_id = data.get("device_id", "").strip()
 
     if not all([camera_name, brand, model, ip_address, camera_username, camera_password, rtsp_url]):
         return jsonify({"error": "缺少必要欄位"}), 400
 
-    cursor = db.cursor()
+    cursor = db.cursor(pymysql.cursors.DictCursor)
+
+    if device_id:
+        cursor.execute("SELECT user_id FROM Devices WHERE device_id = %s", (device_id,))
+        device = cursor.fetchone()
+
+        if not device or device['user_id'] != user_id:
+            cursor.close()
+            return jsonify({"error": "裝置不存在或不屬於此使用者"}), 400
+
+        cursor.execute("SELECT 1 FROM Projects WHERE device_id = %s", (device_id,))
+        if cursor.fetchone():
+            cursor.close()
+            return jsonify({"error": "該裝置已被專案使用，無法綁定"}), 400
+
+        cursor.execute("SELECT 1 FROM Cameras WHERE device_id = %s", (device_id,))
+        if cursor.fetchone():
+            cursor.close()
+            return jsonify({"error": "該裝置已被其他攝影機綁定，無法綁定"}), 400
+    else:
+        device_id = None
+
     cursor.execute("""
-        INSERT INTO Cameras (user_id, camera_name, brand, model, ip_address, camera_username, camera_password, rtsp_url)
-        VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
-    """, (user_id, camera_name, brand, model, ip_address, camera_username, camera_password, rtsp_url))
+        INSERT INTO Cameras (user_id, camera_name, brand, model, ip_address, camera_username, camera_password, rtsp_url, device_id)
+        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
+    """, (user_id, camera_name, brand, model, ip_address, camera_username, camera_password, rtsp_url, device_id))
 
     db.commit()
     cursor.close()
     return '', 200
 
-#刪除攝影機
+#刪除攝影機(有改)
 @app.route('/camera/delete', methods=['DELETE'])
 def delete_camera():
     data = request.get_json()
@@ -516,29 +538,35 @@ def delete_camera():
         return '', 401
 
     user_id = payload.get('user_id')
-
     if not camera_id:
         return jsonify({"error": "缺少 camera_id"}), 400
 
     cursor = db.cursor(pymysql.cursors.DictCursor)
-    cursor.execute(
-        "SELECT * FROM Cameras WHERE camera_id = %s AND user_id = %s",
-        (camera_id, user_id)
-    )
+    cursor.execute("SELECT * FROM Cameras WHERE camera_id = %s AND user_id = %s", (camera_id, user_id))
     camera = cursor.fetchone()
-
     if not camera:
+        cursor.close()
         return jsonify({"error": "找不到攝影機"}), 404
 
-    cursor.execute(
-        "DELETE FROM Cameras WHERE camera_id = %s AND user_id = %s",
-        (camera_id, user_id)
-    )
+    cursor.execute("SELECT 1 FROM Projects WHERE camera_id = %s", (camera_id,))
+    if cursor.fetchone():
+        cursor.close()
+        return jsonify({"error": "此攝影機已有專案綁定，請先移除專案"}), 400
+
+    if camera.get('device_id'):
+        cursor.execute("""
+            UPDATE Cameras 
+            SET device_id = NULL 
+            WHERE camera_id = %s
+        """, (camera_id,))
+
+    cursor.execute("DELETE FROM Cameras WHERE camera_id = %s AND user_id = %s", (camera_id, user_id))
+
     db.commit()
     cursor.close()
     return '', 200
 
-#修改攝影機
+#修改攝影機(有改)
 @app.route('/camera/update', methods=["POST"])
 def update_camera():
     data = request.get_json()
@@ -550,18 +578,14 @@ def update_camera():
         return '', 401
 
     user_id = payload.get('user_id')
-
     if not camera_id:
         return jsonify({"error": "缺少 camera_id"}), 400
 
     cursor = db.cursor(pymysql.cursors.DictCursor)
-    cursor.execute("""
-        SELECT * FROM Cameras 
-        WHERE camera_id = %s AND user_id = %s
-    """, (camera_id, user_id))
+    cursor.execute("SELECT * FROM Cameras WHERE camera_id = %s AND user_id = %s", (camera_id, user_id))
     camera = cursor.fetchone()
-
     if not camera:
+        cursor.close()
         return jsonify({"error": "找不到攝影機"}), 404
 
     update_fields = {
@@ -571,25 +595,48 @@ def update_camera():
         "ip_address": data.get("ip_address", "").strip(),
         "camera_username": data.get("camera_username", "").strip(),
         "camera_password": data.get("camera_password", "").strip(),
-        "rtsp_url": data.get("rtsp_url", "").strip()
+        "rtsp_url": data.get("rtsp_url", "").strip(),
+        "device_id": data.get("device_id", "").strip()
     }
+
+    if update_fields["device_id"]:
+        cursor.execute("SELECT user_id FROM Devices WHERE device_id = %s", (update_fields["device_id"],))
+        device = cursor.fetchone()
+        if not device or device['user_id'] != user_id:
+            cursor.close()
+            return jsonify({"error": "裝置不存在或不屬於此使用者"}), 400
+
+        cursor.execute("""
+            SELECT 1 FROM Cameras
+            WHERE device_id = %s AND camera_id != %s
+        """, (update_fields["device_id"], camera_id))
+        if cursor.fetchone():
+            cursor.close()
+            return jsonify({"error": "該裝置已被其他攝影機綁定"}), 400
+
+        cursor.execute("""
+            SELECT 1 FROM Projects
+            WHERE device_id = %s
+        """, (update_fields["device_id"],))
+        if cursor.fetchone():
+            cursor.close()
+            return jsonify({"error": "該裝置已被專案使用，無法綁定"}), 400
 
     set_clauses = []
     values = []
     for key, value in update_fields.items():
-        if value:
+        if value or (key == "device_id" and value == ""):
             set_clauses.append(f"{key} = %s")
-            values.append(value)
+            values.append(value if value != "" else None)
 
     if not set_clauses:
+        cursor.close()
         return jsonify({"error": "沒有提供要更新的資料"}), 400
 
-    set_clause = ", ".join(set_clauses)
     values.extend([camera_id, user_id])
-
     cursor.execute(f"""
-        UPDATE Cameras 
-        SET {set_clause}
+        UPDATE Cameras
+        SET {", ".join(set_clauses)}
         WHERE camera_id = %s AND user_id = %s
     """, tuple(values))
 
@@ -597,7 +644,7 @@ def update_camera():
     cursor.close()
     return '', 200
 
-#讀取攝影機
+#讀取攝影機(有改)
 @app.route('/camera', methods=["POST"])
 def cameras():
     data = request.get_json()
@@ -608,9 +655,20 @@ def cameras():
         return jsonify({"error": payload}), 401
 
     user_id = payload.get('user_id')
+
     cursor = db.cursor(pymysql.cursors.DictCursor)
     cursor.execute("""
-        SELECT camera_id, camera_name, brand, model, ip_address, camera_username, camera_password, rtsp_url, created_at
+        SELECT 
+            camera_id,
+            camera_name,
+            brand,
+            model,
+            ip_address,
+            camera_username,
+            camera_password,
+            rtsp_url,
+            device_id,
+            created_at
         FROM Cameras
         WHERE user_id = %s
     """, (user_id,))
@@ -620,6 +678,8 @@ def cameras():
     for cam in cameras:
         if cam.get('created_at'):
             cam['created_at'] = cam['created_at'].strftime('%Y-%m-%d %H:%M:%S')
+        if cam.get('device_id') is None:
+            cam['device_id'] = None
 
     return jsonify({
         "cameras": cameras
@@ -712,6 +772,7 @@ def create_model():
 
     return '', 200
 '''
+
 #刪除模型
 @app.route('/model/delete', methods=["DELETE"])
 def delete_model():
@@ -860,50 +921,65 @@ def list_models():
 
     return jsonify({"models": models}), 200
 
-#新增專案
+#新增專案(有改)
 @app.route('/project/create', methods=['POST'])
 def create_project():
     data = request.get_json()
     token = data.get('token', '')
     project_name = data.get('project_name', '').strip()
     camera_id = data.get('camera_id')
-    device_id = data.get('device_id')
     start_time = data.get('start_time')
     status = str(data.get('status')).strip()
     contact_ids = data.get('contacts_ids', [])
     model_ids = data.get('model_ids', [])
-    event_items = data.get('event_ids', []) 
+    event_items = data.get('event_ids', [])
 
     is_valid, payload = verify_token(token)
     if not is_valid:
         return jsonify({"error": payload}), 401
 
     user_id = payload.get('user_id')
-    if not (project_name and camera_id and device_id and start_time and status in ('0', '1')):
+    if not (project_name and camera_id and start_time and status in ('0', '1')):
         return jsonify({"error": "缺少必要欄位或 status 格式錯誤"}), 400
-
-    start_time_json = json.dumps(start_time)
 
     cursor = db.cursor(pymysql.cursors.DictCursor)
 
-    cursor.execute("SELECT user_id FROM Devices WHERE device_id = %s", (device_id,))
+    cursor.execute("""
+        SELECT device_id FROM Cameras WHERE camera_id = %s AND user_id = %s
+    """, (camera_id, user_id))
+    cam_row = cursor.fetchone()
+
+    if not cam_row:
+        cursor.close()
+        return jsonify({"error": "攝影機不存在或不屬於此使用者"}), 403
+
+    device_id = cam_row['device_id']
+    if not device_id:
+        cursor.close()
+        return jsonify({"error": "攝影機尚未綁定裝置，無法建立專案"}), 400
+
+    cursor.execute("""
+        SELECT user_id FROM Devices WHERE device_id = %s
+    """, (device_id,))
     device_row = cursor.fetchone()
-    if not device_row:
-        return jsonify({"error": "裝置不存在"}), 404
-    if device_row['user_id'] is not None and device_row['user_id'] != user_id:
-        return jsonify({"error": "此裝置已被其他使用者綁定，無法使用"}), 403
+    if not device_row or device_row['user_id'] != user_id:
+        cursor.close()
+        return jsonify({"error": "裝置不存在或不屬於此使用者"}), 403
+
+    cursor.execute("""
+        SELECT 1 FROM Projects WHERE device_id = %s
+    """, (device_id,))
+    if cursor.fetchone():
+        cursor.close()
+        return jsonify({"error": "該裝置已被其他專案使用，請先解除綁定"}), 403
+
+    start_time_json = json.dumps(start_time)
 
     cursor.execute("""
         INSERT INTO Projects (project_name, camera_id, user_id, device_id, start_time, status)
         VALUES (%s, %s, %s, %s, %s, %s)
     """, (project_name, camera_id, user_id, device_id, start_time_json, status))
     project_id = cursor.lastrowid
-
-    cursor.execute("""
-        UPDATE Devices
-        SET user_id = %s
-        WHERE device_id = %s
-    """, (user_id, device_id))
 
     for contact_id in contact_ids:
         cursor.execute("SELECT 1 FROM Contacts WHERE contact_id = %s AND user_id = %s", (contact_id, user_id))
@@ -939,10 +1015,7 @@ def create_project():
         if not row:
             continue
 
-        event_name = row['event_name']
-        
-        #改這裡 ➔ 只存簡短的事件名稱或自訂訊息
-        notification_content = custom_msg or event_name
+        notification_content = custom_msg or row['event_name']
         cursor.execute("""
             INSERT INTO EventProjectRelations (event_id, project_id, notification_content)
             VALUES (%s, %s, %s)
@@ -950,10 +1023,9 @@ def create_project():
 
     db.commit()
     cursor.close()
-
     return '', 200
 
-#刪除專案
+#刪除專案(有改)
 @app.route('/project/delete', methods=["DELETE"])
 def delete_project():
     data = request.get_json()
@@ -969,11 +1041,12 @@ def delete_project():
 
     user_id = payload.get('user_id')
     cursor = db.cursor()
-  
-    cursor.execute("SELECT device_id FROM Projects WHERE project_id = %s AND user_id = %s", (project_id, user_id))
-    row = cursor.fetchone()
 
-    if not row:
+    cursor.execute("""
+        SELECT 1 FROM Projects 
+        WHERE project_id = %s AND user_id = %s
+    """, (project_id, user_id))
+    if not cursor.fetchone():
         cursor.close()
         return jsonify({"error": "專案不存在或無權限"}), 404
 
@@ -984,10 +1057,9 @@ def delete_project():
 
     db.commit()
     cursor.close()
-
     return '', 200
 
-#修改專案
+#修改專案(有改)
 @app.route('/project/update', methods=["POST"])
 def update_project():
     data = request.get_json()
@@ -1006,46 +1078,42 @@ def update_project():
 
     cursor.execute("SELECT * FROM Projects WHERE project_id = %s AND user_id = %s", (project_id, user_id))
     project = cursor.fetchone()
-
     if not project:
         cursor.close()
         return jsonify({"error": "專案不存在或無權限"}), 404
 
     project_name = data.get('project_name')
     camera_id = data.get('camera_id')
-    device_id = data.get('device_id')
     start_time = data.get('start_time')
     contact_ids = data.get('contact_ids')
     model_ids = data.get('model_ids')
-    event_items = data.get('event_ids')  
+    event_items = data.get('event_ids')
     status = data.get('status')
 
     update_fields = []
     params = []
 
     if camera_id:
-        cursor.execute("SELECT 1 FROM Cameras WHERE camera_id = %s AND user_id = %s", (camera_id, user_id))
-        if not cursor.fetchone():
+        cursor.execute("SELECT device_id FROM Cameras WHERE camera_id = %s AND user_id = %s", (camera_id, user_id))
+        camera_row = cursor.fetchone()
+        if not camera_row:
             cursor.close()
-            return jsonify({"error": "無權限使用此攝影機"}), 403
+            return jsonify({"error": "攝影機不存在或不屬於此使用者"}), 403
+
+        if not camera_row["device_id"]:
+            cursor.close()
+            return jsonify({"error": "此攝影機尚未綁定裝置，請先綁定裝置"}), 400
+
+        device_id = camera_row["device_id"]
+
+        # 檢查裝置是否被其他專案使用
+        cursor.execute("SELECT 1 FROM Projects WHERE device_id = %s AND project_id != %s", (device_id, project_id))
+        if cursor.fetchone():
+            cursor.close()
+            return jsonify({"error": "該裝置已被其他專案使用"}), 403
+
         update_fields.append("camera_id = %s")
         params.append(camera_id)
-
-    if device_id and device_id != project["device_id"]:
-        cursor.execute("SELECT user_id FROM Devices WHERE device_id = %s", (device_id,))
-        device_row = cursor.fetchone()
-
-        if not device_row:
-            cursor.close()
-            return jsonify({"error": "指定的裝置不存在"}), 400
-
-        if device_row["user_id"] is not None:
-            cursor.close()
-            return jsonify({"error": "該裝置已被其他人使用"}), 403
-
-        cursor.execute("UPDATE Devices SET user_id = NULL WHERE device_id = %s", (project["device_id"],))
-
-        cursor.execute("UPDATE Devices SET user_id = %s WHERE device_id = %s", (user_id, device_id))
 
         update_fields.append("device_id = %s")
         params.append(device_id)
@@ -1058,7 +1126,7 @@ def update_project():
         update_fields.append("start_time = %s")
         params.append(json.dumps(start_time))
 
-    if status:
+    if status is not None:
         update_fields.append("status = %s")
         params.append(str(status))
 
@@ -1075,20 +1143,20 @@ def update_project():
         for contact_id in contact_ids:
             cursor.execute("SELECT 1 FROM Contacts WHERE contact_id = %s AND user_id = %s", (contact_id, user_id))
             if cursor.fetchone():
-                cursor.execute(
-                    "INSERT INTO ContactProjectRelations (contact_id, project_id) VALUES (%s, %s)",
-                    (contact_id, project_id)
-                )
+                cursor.execute("""
+                    INSERT INTO ContactProjectRelations (contact_id, project_id)
+                    VALUES (%s, %s)
+                """, (contact_id, project_id))
 
     if model_ids is not None:
         cursor.execute("DELETE FROM ModelProjectRelations WHERE project_id = %s", (project_id,))
         for model_id in model_ids:
             cursor.execute("SELECT 1 FROM Models WHERE model_id = %s", (model_id,))
             if cursor.fetchone():
-                cursor.execute(
-                    "INSERT INTO ModelProjectRelations (model_id, project_id) VALUES (%s, %s)",
-                    (model_id, project_id)
-                )
+                cursor.execute("""
+                    INSERT INTO ModelProjectRelations (model_id, project_id)
+                    VALUES (%s, %s)
+                """, (model_id, project_id))
 
     if event_items is not None:
         cursor.execute("DELETE FROM EventProjectRelations WHERE project_id = %s", (project_id,))
@@ -1110,9 +1178,7 @@ def update_project():
             if not row:
                 continue
 
-            event_name = row["event_name"]
-            notification_content = custom_msg or f"專案「{project_name or project['project_name']}」偵測到事件「{event_name}」"
-
+            notification_content = custom_msg or row['event_name']
             cursor.execute("""
                 INSERT INTO EventProjectRelations (event_id, project_id, notification_content)
                 VALUES (%s, %s, %s)
@@ -1122,7 +1188,7 @@ def update_project():
     cursor.close()
     return '', 200
 
-#讀取專案
+#讀取專案(有改)
 @app.route('/project', methods=["GET"])
 def read_project():
     data = request.get_json()
@@ -1141,7 +1207,6 @@ def read_project():
         WHERE user_id = %s
     """, (user_id,))
     projects = cursor.fetchall()
-
     if not projects:
         cursor.close()
         return jsonify({"error": "該使用者沒有任何專案"}), 404
@@ -1154,56 +1219,41 @@ def read_project():
         device_id = project['device_id']
 
         cursor.execute("""
-            SELECT c.contact_id, c.contact_name 
-            FROM Contacts c
-            JOIN ContactProjectRelations cpr 
-            ON c.contact_id = cpr.contact_id AND c.user_id = %s
-            WHERE cpr.project_id = %s
+            SELECT contact_id, contact_name 
+            FROM Contacts
+            WHERE user_id = %s
+            AND contact_id IN (
+                SELECT contact_id FROM ContactProjectRelations WHERE project_id = %s
+            )
         """, (user_id, project_id))
         contacts = cursor.fetchall()
-        contact_ids = [c['contact_id'] for c in contacts]
-        contact_names = [c['contact_name'] for c in contacts]
 
         cursor.execute("""
             SELECT m.model_id, m.model_name
             FROM Models m
-            JOIN ModelProjectRelations mpr 
-            ON m.model_id = mpr.model_id
+            JOIN ModelProjectRelations mpr ON m.model_id = mpr.model_id
             WHERE mpr.project_id = %s
         """, (project_id,))
         models = cursor.fetchall()
-        model_ids = [m['model_id'] for m in models]
-        model_names = [m['model_name'] for m in models]
 
         cursor.execute("""
             SELECT e.event_id, e.event_name
             FROM Events e
-            JOIN EventProjectRelations epr 
-            ON e.event_id = epr.event_id
+            JOIN EventProjectRelations epr ON e.event_id = epr.event_id
             WHERE epr.project_id = %s
         """, (project_id,))
         events = cursor.fetchall()
-        event_ids = [e['event_id'] for e in events]
-        event_names = [e['event_name'] for e in events]
 
         camera_name = None
         if camera_id:
-            cursor.execute("""
-                SELECT camera_name
-                FROM Cameras
-                WHERE camera_id = %s
-            """, (camera_id,))
+            cursor.execute("SELECT camera_name FROM Cameras WHERE camera_id = %s", (camera_id,))
             camera = cursor.fetchone()
             if camera:
                 camera_name = camera['camera_name']
 
         device_name = None
         if device_id:
-            cursor.execute("""
-                SELECT Model
-                FROM Devices
-                WHERE device_id = %s
-            """, (device_id,))
+            cursor.execute("SELECT Model FROM Devices WHERE device_id = %s", (device_id,))
             device = cursor.fetchone()
             if device:
                 device_name = device['Model']
@@ -1217,12 +1267,12 @@ def read_project():
             "device_name": device_name,
             "start_time": json.loads(project['start_time']),
             "status": project['status'],
-            "contact_ids": contact_ids,
-            "contact_names": contact_names,
-            "model_ids": model_ids,
-            "model_names": model_names,
-            "event_ids": event_ids,
-            "event_names": event_names
+            "contact_ids": [c['contact_id'] for c in contacts],
+            "contact_names": [c['contact_name'] for c in contacts],
+            "model_ids": [m['model_id'] for m in models],
+            "model_names": [m['model_name'] for m in models],
+            "event_ids": [e['event_id'] for e in events],
+            "event_names": [e['event_name'] for e in events]
         }
 
         all_project_details.append(project_details)
@@ -1244,18 +1294,11 @@ def get_all_projects():
         return jsonify({"error": "只有管理者能查看所有專案"}), 403
 
     cursor = db.cursor(pymysql.cursors.DictCursor)
-
     cursor.execute("""
-        SELECT 
-            p.project_id,
-            p.start_time,
-            p.camera_id,
-            p.device_id,
-            d.Model AS device_model,
-            c.rtsp_url
-        FROM projects p
-        LEFT JOIN devices d ON p.device_id = d.device_id
-        LEFT JOIN cameras c ON p.camera_id = c.camera_id
+        SELECT p.project_id, p.start_time, p.camera_id, p.device_id, d.Model AS device_model, c.rtsp_url
+        FROM Projects p
+        LEFT JOIN Devices d ON p.device_id = d.device_id
+        LEFT JOIN Cameras c ON p.camera_id = c.camera_id
         WHERE p.status = 1
     """)
     project_rows = cursor.fetchall()
@@ -1267,29 +1310,29 @@ def get_all_projects():
 
         cursor.execute("""
             SELECT model_name, model_path
-            FROM modelprojectrelations mpr
-            JOIN models m ON mpr.model_id = m.model_id
+            FROM Models m
+            JOIN ModelProjectRelations mpr ON m.model_id = mpr.model_id
             WHERE mpr.project_id = %s
         """, (project_id,))
         model_rows = cursor.fetchall()
 
         model_names = [m["model_name"] for m in model_rows]
-
         py_path = pt_path = ""
+
         for m in model_rows:
             try:
-                model_path_json = json.loads(m["model_path"])
+                model_path = json.loads(m["model_path"])
                 if not py_path:
-                    py_path = model_path_json.get("py", "").replace("\\", "/")
+                    py_path = model_path.get("py", "").replace("\\", "/")
                 if not pt_path:
-                    pt_path = model_path_json.get("pt", "").replace("\\", "/")
+                    pt_path = model_path.get("pt", "").replace("\\", "/")
             except:
                 continue
 
         cursor.execute("""
             SELECT e.event_name
-            FROM events e
-            JOIN eventprojectrelations epr ON e.event_id = epr.event_id
+            FROM Events e
+            JOIN EventProjectRelations epr ON e.event_id = epr.event_id
             WHERE epr.project_id = %s
         """, (project_id,))
         event_names = [e["event_name"] for e in cursor.fetchall()]
@@ -1304,19 +1347,11 @@ def get_all_projects():
         projects.append({
             "project_id": project_id,
             "start_time": time_ranges,
-            "camera": {
-                "rtsp_url": row.get("rtsp_url", "")
-            },
             "camera_id": row.get("camera_id"),
-            "device": {
-                "device_id": row.get("device_id"),
-                "model": row.get("device_model")
-            },
+            "camera": {"rtsp_url": row.get("rtsp_url", "")},
+            "device": {"device_id": row.get("device_id"), "model": row.get("device_model")},
             "model_names": model_names,
-            "model_paths": {
-                "py": py_path,
-                "pt": pt_path
-            },
+            "model_paths": {"py": py_path, "pt": pt_path},
             "events": event_names
         })
 
@@ -1337,17 +1372,9 @@ def get_project(project_id):
         return jsonify({"error": "只有管理者能查看專案"}), 403
 
     cursor = db.cursor(pymysql.cursors.DictCursor)
-
-    cursor.execute(""" 
-        SELECT 
-            p.project_id,
-            p.project_name,
-            p.start_time,
-            c.rtsp_url,
-            c.camera_id,
-            c.ip_address AS camera_ip_address,
-            d.device_id,
-            d.Model AS device_model
+    cursor.execute("""
+        SELECT p.project_id, p.project_name, p.start_time, c.rtsp_url, c.camera_id, c.ip_address AS camera_ip_address,
+               d.device_id, d.Model AS device_model
         FROM Projects p
         LEFT JOIN Cameras c ON p.camera_id = c.camera_id
         LEFT JOIN Devices d ON p.device_id = d.device_id
@@ -1358,12 +1385,13 @@ def get_project(project_id):
     if not result:
         cursor.close()
         return jsonify({"error": "找不到該專案"}), 404
+
     try:
-        result["start_time"] = json.loads(result["start_time"])
-        if isinstance(result["start_time"], dict):
-            result["start_time"] = [result["start_time"]]
-    except Exception:
-        result["start_time"] = []
+        start_time = json.loads(result["start_time"])
+        if isinstance(start_time, dict):
+            start_time = [start_time]
+    except:
+        start_time = []
 
     cursor.execute("""
         SELECT e.event_name
@@ -1383,13 +1411,14 @@ def get_project(project_id):
 
     model_names = [m["model_name"] for m in models]
     py_path = pt_path = ""
+
     for m in models:
         try:
-            path_obj = json.loads(m["model_path"])
+            model_path = json.loads(m["model_path"])
             if not py_path:
-                py_path = path_obj.get("py", "").replace("\\", "/")
+                py_path = model_path.get("py", "").replace("\\", "/")
             if not pt_path:
-                pt_path = path_obj.get("pt", "").replace("\\", "/")
+                pt_path = model_path.get("pt", "").replace("\\", "/")
         except:
             continue
 
@@ -1398,20 +1427,14 @@ def get_project(project_id):
     return jsonify({
         "project_id": result["project_id"],
         "project_name": result["project_name"],
-        "start_time": result["start_time"],
+        "start_time": start_time,
         "rtsp_url": result["rtsp_url"],
         "camera_id": result["camera_id"],
         "camera_ip_address": result["camera_ip_address"],
-        "device": {
-            "device_id": result["device_id"],
-            "model": result["device_model"]
-        },
+        "device": {"device_id": result["device_id"], "model": result["device_model"]},
         "events": events,
         "model_names": model_names,
-        "model_paths": {
-            "py": py_path,
-            "pt": pt_path
-        }
+        "model_paths": {"py": py_path, "pt": pt_path}
     }), 200
 
 #找下一筆專案
@@ -1515,28 +1538,31 @@ def get_next_project():
         "status": project["status"]
     }), 200
 
-#新增裝置(管理者)
+#新增裝置(管理者)有改
 @app.route('/device/create', methods=['POST'])
 def create_device():
     data = request.get_json()
     token = data.get("token", "")
-    model = data.get("model", "")
+    model = data.get("model", "").strip()
 
     is_valid, payload = verify_admin_token(token)
     if not is_valid:
         return jsonify({"status": "error", "message": payload}), 401
-    user_id = None
 
+    if not model:
+        return jsonify({"status": "error", "message": "缺少 model"}), 400
+
+    device_id = str(uuid.uuid1())
     cursor = db.cursor()
     cursor.execute("""
-            INSERT INTO Devices (user_id, Model)
-            VALUES (%s, %s)
-        """, (user_id, model))
+        INSERT INTO Devices (device_id, user_id, Model)
+        VALUES (%s, %s, %s)
+    """, (device_id, None, model))
 
     db.commit()
     cursor.close()
 
-    return '', 200
+    return jsonify({"device_id": device_id}), 200
 
 #查詢裝置(管理者)
 @app.route('/admin/device/list', methods=["POST"])
@@ -1688,25 +1714,45 @@ def delete_device():
 
     user_id = payload["user_id"]
 
-    cursor = db.cursor()
+    cursor = db.cursor(pymysql.cursors.DictCursor)
 
     cursor.execute("""
         SELECT device_id FROM Devices
         WHERE device_id = %s AND user_id = %s
     """, (device_id, user_id))
-    device = cursor.fetchone()
-    if not device:
+    if not cursor.fetchone():
         cursor.close()
         return jsonify({"status": "error", "message": "裝置不存在或不屬於此使用者"}), 403
 
     cursor.execute("""
-        SELECT COUNT(*) FROM Projects
+        SELECT COUNT(*) AS count FROM Projects
         WHERE device_id = %s
     """, (device_id,))
-    if cursor.fetchone()[0] > 0:
+    if cursor.fetchone()['count'] > 0:
         cursor.close()
         return jsonify({"status": "error", "message": "此裝置正在被專案使用，請先移除專案"}), 400
-    
+
+    cursor.execute("""
+        SELECT camera_id FROM Cameras
+        WHERE device_id = %s AND user_id = %s
+    """, (device_id, user_id))
+    cameras = cursor.fetchall()
+
+    for cam in cameras:
+        camera_id = cam['camera_id']
+        cursor.execute("""
+            SELECT COUNT(*) AS count FROM Projects
+            WHERE camera_id = %s
+        """, (camera_id,))
+        if cursor.fetchone()['count'] > 0:
+            cursor.close()
+            return jsonify({"status": "error", "message": f"攝影機 {camera_id} 已被專案使用，請先解除專案"}), 400
+
+    cursor.execute("""
+        DELETE FROM Cameras
+        WHERE device_id = %s AND user_id = %s
+    """, (device_id, user_id))
+
     cursor.execute("""
         UPDATE Devices
         SET user_id = NULL
@@ -1813,6 +1859,7 @@ def get_abnormal_events():
     finally:
         cursor.close()
 
+#加好友
 @app.route("/webhook", methods=["POST"])
 def webhook():
     data = request.get_json()
@@ -1954,7 +2001,6 @@ def create_abnormal_event():
         db.rollback()
         cursor.close()
         return jsonify({"error": f"發送通知失敗: {str(e)}"}), 500
-
 
 #即時串流(可能要改、因為改成樹梅派)
 '''
