@@ -41,13 +41,13 @@ MODEL_UPLOAD_FOLDER = "C:/models"
 ALLOWED_MODEL_EXTENSIONS = {"py", "pt"}
 os.makedirs(MODEL_UPLOAD_FOLDER, exist_ok=True)
 
-# 照片上傳
+#照片上傳
 PICTURE_UPLOAD_FOLDER = "C:/pictures"
 ALLOWED_PICTURE_EXTENSIONS = {'png', 'jpg'}
 os.makedirs(PICTURE_UPLOAD_FOLDER, exist_ok=True)
 app.config['PICTURE_UPLOAD_FOLDER'] = PICTURE_UPLOAD_FOLDER
 
-# Jetson Nano 路徑
+#Jetson Nano 路徑
 JETSON_DEST_PATH = "/home/yuuu/models"
 def generate_token(user_id, user_name, line_id, picture_url=''):
     #expiration_time = datetime.datetime.now() + datetime.timedelta(minutes=TOKEN_EXPIRY)
@@ -693,7 +693,7 @@ def cameras():
         "cameras": cameras
     }), 200
 
-#新增模型
+#新增模型jeston nano
 def upload_to_jetson(ip, local_path, remote_path, username, password):
     try:
         transport = paramiko.Transport((ip, 22))
@@ -707,8 +707,8 @@ def upload_to_jetson(ip, local_path, remote_path, username, password):
         print(f"SFTP error: {e}")
         return False
     
-@app.route('/model/create', methods=['POST'])
-def create_model():
+@app.route('/model/jeston nano', methods=['POST'])
+def create_model_jeston_nano():
     token = request.form.get('token', '').strip()
     if not token:
         return jsonify({"error": "缺少 Token"}), 400
@@ -790,8 +790,8 @@ def create_model():
     return '', 200
 
 #刪除模型
-@app.route('/model/delete', methods=['DELETE'])
-def delete_model():
+@app.route('/model/delete/jeston nano', methods=['DELETE'])
+def delete_model_jeston_nano():
     data = request.get_json()
     token = data.get('token', '')
     model_id = data.get('model_id')
@@ -826,8 +826,8 @@ def delete_model():
     return '', 200
 
 #修改模型
-@app.route('/model/update', methods=['POST'])
-def update_model():
+@app.route('/model/update/jeston nano', methods=['POST'])
+def update_model_jeston_nano():
     token = request.form.get('token', '').strip()
     if not token:
         return jsonify({"error": "缺少 Token"}), 400
@@ -915,8 +915,8 @@ def update_model():
     return '', 200
 
 #讀取模型
-@app.route('/models', methods=['GET'])
-def get_all_models():
+@app.route('/models/jeston nano', methods=['GET'])
+def get_all_models_jeston_nano():
     data = request.get_json()
     token = data.get('token', '')
     is_valid, payload = verify_admin_token(token)
@@ -938,6 +938,230 @@ def get_all_models():
 
     return jsonify(models), 200
 
+#==================== 新增模型 ====================
+@app.route('/model/create', methods=["POST"])
+def create_model():
+    # 權限驗證
+    token = request.form.get("token", "")
+    is_valid, payload = verify_admin_token(token)
+    if not is_valid:
+        return jsonify({"error": payload}), 401
+    if not payload.get("is_admin"):
+        return jsonify({"error": "只有管理者可以新增模型"}), 403
+
+    # 取得欄位資料
+    name = request.form.get("name", "").strip()
+    version = request.form.get("version", "").strip()
+    raw_event = request.form.get("event", "").strip()
+
+    if not name or not version or not raw_event:
+        return jsonify({"error": "缺少必要欄位"}), 400
+
+    cursor = db.cursor()
+
+    # 檢查模型是否重複
+    cursor.execute("SELECT 1 FROM Models WHERE model_name = %s", (name,))
+    if cursor.fetchone():
+        cursor.close()
+        return jsonify({"error": f"模型名稱 '{name}' 已存在，請重新命名"}), 400
+
+    # 處理事件欄位
+    event_items = [e.strip() for e in raw_event.split(",") if e.strip()]
+    if not event_items:
+        return jsonify({"error": "事件格式錯誤，請以逗號分隔"}), 400
+    event_type = ",".join(event_items)
+
+    # 檔案處理
+    file_py = request.files.get("py")
+    file_pt = request.files.get("pt")
+
+    def allowed_file(filename, allowed_exts):
+        return '.' in filename and filename.rsplit('.', 1)[1].lower() in allowed_exts
+
+    if not file_py or not allowed_file(file_py.filename, ALLOWED_MODEL_EXTENSIONS):
+        return jsonify({"error": f"缺少或不支援的 py 檔案，允許：{', '.join(ALLOWED_MODEL_EXTENSIONS)}"}), 400
+    if not file_pt or not allowed_file(file_pt.filename, ALLOWED_MODEL_EXTENSIONS):
+        return jsonify({"error": f"缺少或不支援的 pt 檔案，允許：{', '.join(ALLOWED_MODEL_EXTENSIONS)}"}), 400
+
+    # 建立模型資料夾
+    model_folder = os.path.join(MODEL_UPLOAD_FOLDER, name)
+    if os.path.exists(model_folder):
+        cursor.close()
+        return jsonify({"error": f"模型資料夾 '{name}' 已存在，請確認是否命名重複"}), 400
+    os.makedirs(model_folder)
+
+    # 儲存檔案
+    filepath_py = os.path.join(model_folder, "model.py")
+    filepath_pt = os.path.join(model_folder, "model.pt")
+    file_py.save(filepath_py)
+    file_pt.save(filepath_pt)
+
+    model_path = json.dumps({"py": filepath_py, "pt": filepath_pt})
+
+    # 寫入 Models 資料表
+    cursor.execute("""
+        INSERT INTO Models (model_name, model_version, event_type, model_path)
+        VALUES (%s, %s, %s, %s)
+    """, (name, version, event_type, model_path))
+    model_id = cursor.lastrowid
+
+    # 寫入 Events 資料表（逐筆 event_name）
+    for event_name in event_items:
+        cursor.execute("""
+            INSERT INTO Events (event_name, model_id)
+            VALUES (%s, %s)
+        """, (event_name, model_id))
+
+    db.commit()
+    cursor.close()
+
+    return jsonify({"message": "模型新增成功", "model_id": model_id}), 200
+
+#==================== 刪除模型 ====================
+@app.route('/model/delete', methods=["DELETE"])
+def delete_model():
+    data = request.get_json()
+    token = data.get("token", "")
+    model_id = data.get("model_id")
+    is_valid, payload = verify_admin_token(token)
+    if not is_valid:
+        return jsonify({"error": payload}), 401
+    if not payload.get("is_admin"):
+        return jsonify({"error": "只有管理者可以刪除模型"}), 403
+    if not model_id:
+        return jsonify({"error": "缺少 model_id"}), 400
+
+    cursor = db.cursor(pymysql.cursors.DictCursor)
+    cursor.execute("SELECT * FROM Models WHERE model_id = %s", (model_id,))
+    model = cursor.fetchone()
+
+    if not model:
+        cursor.close()
+        return jsonify({"error": "找不到該模型"}), 404
+
+    model_name = model["model_name"]
+    model_folder = os.path.join(UPLOAD_FOLDER, model_name)
+    if os.path.exists(model_folder):
+        try:
+            shutil.rmtree(model_folder)
+        except Exception as e:
+            print(f"刪除資料夾失敗: {e}")
+
+    cursor.execute("DELETE FROM EventProjectRelations WHERE event_id IN (SELECT event_id FROM Events WHERE model_id = %s)", (model_id,))
+    cursor.execute("DELETE FROM Events WHERE model_id = %s", (model_id,))
+    cursor.execute("DELETE FROM Models WHERE model_id = %s", (model_id,))
+    db.commit()
+    cursor.close()
+
+    return '', 200
+
+#==================== 修改模型 ====================
+@app.route('/model/update', methods=["POST"])
+def update_model():
+    print("收到的欄位：", request.form.to_dict())  # Debug: 確認收到的欄位
+    print("收到的檔案：", list(request.files.keys()))  # Debug: 確認收到的檔案
+
+    token = request.form.get("token", "")
+    is_valid, payload = verify_admin_token(token)
+    if not is_valid:
+        return jsonify({"error": payload}), 401
+    if not payload.get("is_admin"):
+        return jsonify({"error": "只有管理者可以修改模型"}), 403
+
+    model_id = request.form.get("model_id", "").strip()
+    if not model_id:
+        return jsonify({"error": "缺少 model_id"}), 400
+        
+    model_event_info = json.loads(request.form.get("model_event_info", "{}"))
+    name = model_event_info.get("name", "").strip()
+    version = model_event_info.get("version", "").strip()
+    raw_event = model_event_info.get("event", [])
+    event_type = ",".join(raw_event) if raw_event else ""
+
+    file_py = request.files.get("py")
+    file_pt = request.files.get("pt")
+
+    cursor = db.cursor(pymysql.cursors.DictCursor)
+    cursor.execute("SELECT * FROM Models WHERE model_id = %s", (model_id,))
+    model = cursor.fetchone()
+    if not model:
+        cursor.close()
+        return jsonify({"error": "找不到該模型"}), 404
+
+    old_model_name = model["model_name"]
+    old_model_path = json.loads(model["model_path"])
+    old_folder = os.path.join(UPLOAD_FOLDER, old_model_name)
+    new_folder = os.path.join(UPLOAD_FOLDER, name or old_model_name)
+
+    if name and name != old_model_name and os.path.exists(old_folder):
+        shutil.move(old_folder, new_folder)
+    else:
+        os.makedirs(new_folder, exist_ok=True)
+
+    filepath_py = os.path.join(new_folder, "model.py")
+    filepath_pt = os.path.join(new_folder, "model.pt")
+
+    if file_py and allowed_file(file_py.filename):
+        if os.path.exists(filepath_py):
+            os.remove(filepath_py)
+        file_py.save(filepath_py)
+        old_model_path["py"] = filepath_py
+
+    if file_pt and allowed_file(file_pt.filename):
+        if os.path.exists(filepath_pt):
+            os.remove(filepath_pt)
+        file_pt.save(filepath_pt)
+        old_model_path["pt"] = filepath_pt
+
+    model_path_json = json.dumps(old_model_path)
+    update_fields = {
+        "model_name": name,
+        "model_version": version,
+        "event_type": event_type,
+        "model_path": model_path_json
+    }
+
+    set_clause = ", ".join(f"{k} = %s" for k in update_fields)
+    values = list(update_fields.values())
+    values.append(model_id)
+    
+    cursor.execute(f"""
+        UPDATE Models
+        SET {set_clause}
+        WHERE model_id = %s
+    """, tuple(values))
+    
+    db.commit()
+    cursor.execute("SELECT * FROM Models WHERE model_id = %s", (model_id,))
+    updated_model = cursor.fetchone()
+
+    cursor.close()
+
+    if updated_model:
+        return '', 200
+    else:
+        return jsonify({"error": "更新後的模型資料無法查詢"}), 500
+        
+#==================== 讀取模型(使用者、管理者都可用) ====================
+@app.route('/model', methods=["POST"])
+def list_models():
+    data = request.get_json()
+    token = data.get("token", "")
+    is_valid, payload = verify_token(token)
+    if not is_valid:
+        return jsonify({"error": payload}), 401
+
+    is_admin = payload.get("is_admin", False)
+
+    with db.cursor(pymysql.cursors.DictCursor) as cursor:
+        if is_admin:
+            cursor.execute("SELECT model_id, model_name, model_version, event_type, model_path FROM Models")
+        else:
+            cursor.execute("SELECT model_id, model_name, model_version, event_type FROM Models")
+
+        models = cursor.fetchall()
+
+    return jsonify({"models": models}), 200
 
 #新增專案
 @app.route('/project/create', methods=['POST'])
@@ -2151,7 +2375,8 @@ def upload_photo():
         }), 200
 
     return jsonify({"error": "不支援的檔案格式"}), 400
-    
+
+
 #測試
 @app.route('/generate_test_token', methods=['GET'])
 def generate_test_token():
@@ -2186,5 +2411,4 @@ def test_callback():
         return jsonify({"message": "找不到使用者"}), 404
 
 if __name__ == '__main__':
-    #init_admin()
     app.run(debug=True)
