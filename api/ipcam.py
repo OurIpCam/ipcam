@@ -31,7 +31,7 @@ REDIRECT_URI = "http://210.240.202.108"
 LINE_AUTH_URL = "https://access.line.me/oauth2/v2.1/authorize"
 LINE_TOKEN_URL = "https://api.line.me/oauth2/v2.1/token"
 LINE_PROFILE_URL = "https://api.line.me/v2/profile"
-LINE_CHANNEL_ACCESS_TOKEN = "HNEuVLuOEnGDi+nAoJh7ZIFtOWTmMpTQTVYrx/+L5kjK1YZcW1D3KsNNw/Yt2WhlN9AyTVXIFWZrnwjfMJ8dADbmm1jvTIvxhVzK2aJtjbfvMgUJOnioSetlQ67rZffFWU43PqPcgP+WktjF1Gr2ewdB04t89/1O/w1cDnyilFU="
+LINE_CHANNEL_ACCESS_TOKEN = "mDQYBPwfFfeD1WZz4LCpqyVWof+pPCpYehcQsHTp0D5dcWeQBeCum3lZU1vu/gw2N9AyTVXIFWZrnwjfMJ8dADbmm1jvTIvxhVzK2aJtjbdrfqfby1Gu29L0foRieCBtWwy0+qCzrug2b4ZQgg0U4AdB04t89/1O/w1cDnyilFU="
 SECRET_KEY = "11124214"
 TOKEN_EXPIRY = 480
 token_storage = {}
@@ -127,7 +127,7 @@ def clean_filename(filename):
 def allowed_file(filename, allowed_extensions):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in allowed_extensions
 
-#初始化
+#====================初始化====================
 @app.route('/admin/init', methods=["POST"])
 def init_admin_password():
     data = request.get_json()
@@ -154,7 +154,7 @@ def init_admin_password():
 
     return jsonify({"message": "初始化成功"}), 200
 
-#管理者登入
+#====================管理者登入====================
 @app.route('/admin/login', methods=["POST"])
 def admin_login():
     data = request.get_json()
@@ -182,7 +182,7 @@ def admin_login():
 
     return jsonify({"token": token}), 200
 
-#模型管理者
+#====================模型管理者====================
 @app.route('/admin/fixed-token', methods=["POST"])
 def get_fixed_admin_token(): 
     data = request.get_json()
@@ -207,7 +207,7 @@ def get_fixed_admin_token():
         cursor.close()
         return jsonify({"token": token}), 200
     
-#管理者登出
+#====================管理者登出====================
 @app.route('/admin/logout', methods=["POST"])
 def admin_logout():
     data = request.get_json()
@@ -228,7 +228,7 @@ def admin_logout():
     cursor.close()
     return '', 200
 
-#使用者登入
+#====================使用者登入====================
 @app.route('/callback')
 def callback():
     code = request.args.get('code')
@@ -290,7 +290,7 @@ def callback():
             "token": token
         }),200
        
-#設定名字
+#====================設定名字====================
 @app.route('/set_name', methods=['POST'])
 def set_name():
     data = request.get_json()
@@ -319,7 +319,7 @@ def set_name():
     cursor.close()
     return jsonify({"token" : token}),200
 
-#取得使用者
+#====================取得使用者====================
 @app.route('/user', methods=["POST"])
 def user():
     data = request.get_json()
@@ -342,7 +342,7 @@ def user():
         #"token_expiration": expiration_time
     }),200
 
-#登出
+#======================登出====================
 @app.route('/logout', methods=["POST"])
 def logout():
     data = request.get_json()
@@ -360,7 +360,7 @@ def logout():
     cursor.close()
     return '', 200
 
-#新增聯絡人
+#====================新增聯絡人====================
 @app.route('/contact/create', methods=["POST"])
 def create_contact():
     data = request.get_json()
@@ -368,23 +368,30 @@ def create_contact():
     is_valid, payload = verify_token(token)
 
     if not is_valid:
-        return '', 401
+        return jsonify({"error": "未授權"}), 401
 
     current_user_id = payload.get("user_id")
     contact_user_id = data.get("contact_user_id")
     contact_name = data.get("contact_name", "").strip()
 
     if not contact_user_id or not contact_name:
-        return '', 400 
-    
+        return jsonify({"error": "缺少參數"}), 400 
+
     if contact_user_id == current_user_id:
-        return '', 400
+        return jsonify({"error": "不能加自己為聯絡人"}), 400
 
     cursor = db.cursor(pymysql.cursors.DictCursor)
-    cursor.execute("SELECT user_id FROM Users WHERE user_id = %s", (contact_user_id,))
-    user = cursor.fetchone()
-    if not user:
-        return '', 404
+
+    cursor.execute("""
+        SELECT message_line_id FROM Users WHERE user_id = %s
+    """, (contact_user_id,))
+    contact_user = cursor.fetchone()
+
+    if not contact_user:
+        return jsonify({"error": "找不到該使用者"}), 404
+
+    if not contact_user.get("message_line_id"):
+        return jsonify({"error": "該使用者尚未加入 LINE Bot"}), 400
 
     try:
         cursor.execute("""
@@ -393,12 +400,11 @@ def create_contact():
         """, (contact_user_id, current_user_id, contact_name))
         db.commit()
     except pymysql.IntegrityError:
-        return '', 409
+        return jsonify({"error": "聯絡人已存在"}), 409
 
     return '', 200
 
-
-#刪除聯絡人
+#====================刪除聯絡人====================
 @app.route('/contact/delete', methods=["DELETE"])
 def delete_contact():
     data = request.get_json()
@@ -431,7 +437,7 @@ def delete_contact():
     return '', 200
 
 
-#修改聯絡人
+#====================修改聯絡人====================
 @app.route('/contact/update', methods=["POST"])
 def update_contact_name():
     data = request.get_json()
@@ -461,7 +467,7 @@ def update_contact_name():
     return '', 200
 
 
-#讀取聯絡人
+#====================讀取聯絡人====================
 @app.route('/contact', methods=["POST"])
 def list_contacts():
     data = request.get_json()
@@ -480,7 +486,7 @@ def list_contacts():
         "contacts": contacts
     }),200
 
-#新增攝影機
+#====================新增攝影機====================
 @app.route('/camera/create', methods=["POST"])
 def create_camera():
     data = request.get_json()
@@ -534,7 +540,7 @@ def create_camera():
     cursor.close()
     return '', 200
 
-#刪除攝影機
+#====================刪除攝影機====================
 @app.route('/camera/delete', methods=['DELETE'])
 def delete_camera():
     data = request.get_json()
@@ -574,7 +580,7 @@ def delete_camera():
     cursor.close()
     return '', 200
 
-#修改攝影機
+#====================修改攝影機====================
 @app.route('/camera/update', methods=["POST"])
 def update_camera():
     data = request.get_json()
@@ -652,7 +658,7 @@ def update_camera():
     cursor.close()
     return '', 200
 
-#讀取攝影機
+#====================讀取攝影機====================
 @app.route('/camera', methods=["POST"])
 def cameras():
     data = request.get_json()
@@ -693,7 +699,7 @@ def cameras():
         "cameras": cameras
     }), 200
 
-#新增模型jeston nano
+#=================新增模型jeston nano==============
 def upload_to_jetson(ip, local_path, remote_path, username, password):
     try:
         transport = paramiko.Transport((ip, 22))
@@ -707,8 +713,8 @@ def upload_to_jetson(ip, local_path, remote_path, username, password):
         print(f"SFTP error: {e}")
         return False
     
-@app.route('/model/jeston nano', methods=['POST'])
-def create_model_jeston_nano():
+@app.route('/model/upload_to_jetson', methods=['POST'])
+def upload_model_to_jetson():
     token = request.form.get('token', '').strip()
     if not token:
         return jsonify({"error": "缺少 Token"}), 400
@@ -718,230 +724,54 @@ def create_model_jeston_nano():
         return jsonify({"error": "無效的 Token"}), 401
 
     jetson_ip = request.form.get('jetson_ip', '').strip()
-    jetson_user = request.form.get('jetson_username', '').strip()
-    jetson_pass = request.form.get('jetson_password', '').strip()
+    jetson_username = request.form.get('jetson_username', '').strip()
+    jetson_password = request.form.get('jetson_password', '').strip()
 
-    if not jetson_ip or not jetson_user or not jetson_pass:
+    if not jetson_ip or not jetson_username or not jetson_password:
         return jsonify({"error": "缺少 Jetson 連線資訊"}), 400
 
     model_name = request.form.get('model_name', '').strip()
-    model_version = request.form.get('model_version', '').strip()
-    event_type = request.form.get('event_type', '').strip()
 
-    if not model_name or not model_version or not event_type:
-        return jsonify({"error": "缺少模型資料"}), 400
-
-    py_file = request.files.get("py_file")
-    pt_file = request.files.get("pt_file")
-
-    if not py_file or not pt_file:
-        return jsonify({"error": "沒有收到完整檔案"}), 400
+    if not model_name:
+        return jsonify({"error": "缺少模型名稱"}), 400
 
     model_folder = os.path.join(MODEL_UPLOAD_FOLDER, model_name)
-    os.makedirs(model_folder, exist_ok=True)
+    model_folder = os.path.normpath(model_folder)
 
-    filenames = {}
+    if not os.path.exists(model_folder):
+        return jsonify({"error": "模型資料夾不存在"}), 404
+
+    py_file_name = request.form.get('py_file_name', 'model_v2.py')  
+    pt_file_name = request.form.get('pt_file_name', 'model_v2.pt')  
+
+    py_file_path = os.path.join(model_folder, py_file_name)
+    pt_file_path = os.path.join(model_folder, pt_file_name)
+
+    py_file_path = os.path.normpath(py_file_path)
+    pt_file_path = os.path.normpath(pt_file_path)
+
+    print(f"Checking for {py_file_name} at {py_file_path}: {os.path.exists(py_file_path)}")
+    print(f"Checking for {pt_file_name} at {pt_file_path}: {os.path.exists(pt_file_path)}")
+
+    if not os.path.exists(py_file_path) or not os.path.exists(pt_file_path):
+        return jsonify({"error": "缺少檔案"}), 400
+
+    remote_path_py = os.path.join(JETSON_DEST_PATH, model_name, py_file_name)
+    remote_path_pt = os.path.join(JETSON_DEST_PATH, model_name, pt_file_name)
+
     upload_results = {}
 
-    for ftype, file in [('py', py_file), ('pt', pt_file)]:
-        if file and allowed_file(file.filename, ALLOWED_MODEL_EXTENSIONS):
-            filename = secure_filename(file.filename)
-            local_path = os.path.join(model_folder, filename)
-            file.save(local_path)
-
-            remote_path = os.path.join(JETSON_DEST_PATH, model_name, filename)
-
-            try:
-                transport = paramiko.Transport((jetson_ip, 22))
-                transport.connect(username=jetson_user, password=jetson_pass)
-                sftp = paramiko.SFTPClient.from_transport(transport)
-                try:
-                    sftp.mkdir(os.path.join(JETSON_DEST_PATH, model_name))
-                except:
-                    pass 
-                sftp.put(local_path, remote_path)
-                sftp.close()
-                transport.close()
-                upload_results[ftype] = "success"
-            except Exception as e:
-                print(f"SFTP error: {e}")
-                upload_results[ftype] = "fail"
-
-            filenames[ftype] = os.path.normpath(local_path)
+    for local_path, remote_path in [(py_file_path, remote_path_py), (pt_file_path, remote_path_pt)]:
+        if upload_to_jetson(jetson_ip, local_path, remote_path, jetson_username, jetson_password):
+            upload_results[os.path.basename(local_path)] = "success"
         else:
-            return jsonify({"error": f"{ftype} 檔案格式錯誤或遺失"}), 400
+            upload_results[os.path.basename(local_path)] = "fail"
 
-    cursor = db.cursor()
-    cursor.execute("""
-        INSERT INTO Models (model_name, model_version, event_type, model_path)
-        VALUES (%s, %s, %s, %s)
-    """, (
-        model_name,
-        model_version,
-        event_type,
-        json.dumps({
-            "py": filenames.get("py", ""),
-            "pt": filenames.get("pt", "")
-        }, ensure_ascii=False)
-    ))
-    db.commit()
-    cursor.close()
+    return jsonify({"upload_results": upload_results}), 200
 
-    return '', 200
-
-#刪除模型
-@app.route('/model/delete/jeston nano', methods=['DELETE'])
-def delete_model_jeston_nano():
-    data = request.get_json()
-    token = data.get('token', '')
-    model_id = data.get('model_id')
-
-    is_valid, payload = verify_admin_token(token)
-    if not is_valid:
-        return jsonify({"error": "無效的 Token"}), 401
-
-    if not model_id:
-        return jsonify({"error": "缺少 model_id"}), 400
-
-    cursor = db.cursor()
-    cursor.execute("SELECT model_path FROM Models WHERE model_id = %s", (model_id,))
-    row = cursor.fetchone()
-
-    if not row:
-        cursor.close()
-        return jsonify({"error": "模型不存在"}), 404
-
-    try:
-        paths = json.loads(row[0])
-        for path in paths.values():
-            if os.path.exists(path):
-                os.remove(path)
-    except:
-        pass
-
-    cursor.execute("DELETE FROM Models WHERE model_id = %s", (model_id,))
-    db.commit()
-    cursor.close()
-
-    return '', 200
-
-#修改模型
-@app.route('/model/update/jeston nano', methods=['POST'])
-def update_model_jeston_nano():
-    token = request.form.get('token', '').strip()
-    if not token:
-        return jsonify({"error": "缺少 Token"}), 400
-
-    is_valid, payload = verify_admin_token(token)
-    if not is_valid:
-        return jsonify({"error": "無效的 Token"}), 401
-
-    model_id = request.form.get('model_id', '').strip()
-    if not model_id:
-        return jsonify({"error": "缺少 model_id"}), 400
-
-    model_name = request.form.get('model_name')
-    model_version = request.form.get('model_version')
-    event_type = request.form.get('event_type')
-
-    jetson_ip = request.form.get('jetson_ip', '').strip()
-    jetson_user = request.form.get('jetson_username', '').strip()
-    jetson_pass = request.form.get('jetson_password', '').strip()
-
-    py_file = request.files.get("py_file")
-    pt_file = request.files.get("pt_file")
-
-    cursor = db.cursor(pymysql.cursors.DictCursor)
-    cursor.execute("SELECT * FROM Models WHERE model_id = %s", (model_id,))
-    row = cursor.fetchone()
-    if not row:
-        return jsonify({"error": "找不到模型"}), 404
-
-    current_paths = json.loads(row['model_path'])
-    current_name = row['model_name']
-    updated_paths = {}
-
-    model_folder = os.path.join(MODEL_UPLOAD_FOLDER, model_name or current_name)
-    os.makedirs(model_folder, exist_ok=True)
-
-    for ftype, file in [('py', py_file), ('pt', pt_file)]:
-        if file and allowed_file(file.filename, ALLOWED_MODEL_EXTENSIONS):
-            filename = secure_filename(file.filename)
-            local_path = os.path.join(model_folder, filename)
-            file.save(local_path)
-
-            if jetson_ip and jetson_user and jetson_pass:
-                try:
-                    transport = paramiko.Transport((jetson_ip, 22))
-                    transport.connect(username=jetson_user, password=jetson_pass)
-                    sftp = paramiko.SFTPClient.from_transport(transport)
-                    try:
-                        sftp.mkdir(os.path.join(JETSON_DEST_PATH, model_name or current_name))
-                    except:
-                        pass
-                    remote_path = os.path.join(JETSON_DEST_PATH, model_name or current_name, filename)
-                    sftp.put(local_path, remote_path)
-                    sftp.close()
-                    transport.close()
-                except Exception as e:
-                    print(f"SFTP error: {e}")
-
-            updated_paths[ftype] = local_path.replace("/", "\\")
-
-    current_paths.update(updated_paths)
-
-    update_fields = []
-    values = []
-
-    if model_name:
-        update_fields.append("model_name = %s")
-        values.append(model_name)
-    if model_version:
-        update_fields.append("model_version = %s")
-        values.append(model_version)
-    if event_type:
-        update_fields.append("event_type = %s")
-        values.append(event_type)
-
-    update_fields.append("model_path = %s")
-    values.append(json.dumps(current_paths, ensure_ascii=False))
-    values.append(model_id)
-
-    sql = f"UPDATE Models SET {', '.join(update_fields)} WHERE model_id = %s"
-    cursor.execute(sql, values)
-    db.commit()
-    cursor.close()
-
-    return '', 200
-
-#讀取模型
-@app.route('/models/jeston nano', methods=['GET'])
-def get_all_models_jeston_nano():
-    data = request.get_json()
-    token = data.get('token', '')
-    is_valid, payload = verify_admin_token(token)
-    if not is_valid:
-        return jsonify({"error": "無效的 Token"}), 401
-
-    cursor = db.cursor(pymysql.cursors.DictCursor)
-    cursor.execute("SELECT * FROM Models")
-    models = cursor.fetchall()
-    cursor.close()
-
-    for model in models:
-        try:
-            model_path = json.loads(model['model_path'])
-            model['model_path'] = model_path
-        except Exception as e:
-            model['model_path'] = {}
-            model['error'] = f"model_path 解析失敗: {str(e)}"
-
-    return jsonify(models), 200
-
-#==================== 新增模型 ====================
+#====================新增模型====================
 @app.route('/model/create', methods=["POST"])
 def create_model():
-    # 權限驗證
     token = request.form.get("token", "")
     is_valid, payload = verify_admin_token(token)
     if not is_valid:
@@ -949,7 +779,6 @@ def create_model():
     if not payload.get("is_admin"):
         return jsonify({"error": "只有管理者可以新增模型"}), 403
 
-    # 取得欄位資料
     name = request.form.get("name", "").strip()
     version = request.form.get("version", "").strip()
     raw_event = request.form.get("event", "").strip()
@@ -958,20 +787,16 @@ def create_model():
         return jsonify({"error": "缺少必要欄位"}), 400
 
     cursor = db.cursor()
-
-    # 檢查模型是否重複
     cursor.execute("SELECT 1 FROM Models WHERE model_name = %s", (name,))
     if cursor.fetchone():
         cursor.close()
         return jsonify({"error": f"模型名稱 '{name}' 已存在，請重新命名"}), 400
 
-    # 處理事件欄位
     event_items = [e.strip() for e in raw_event.split(",") if e.strip()]
     if not event_items:
         return jsonify({"error": "事件格式錯誤，請以逗號分隔"}), 400
     event_type = ",".join(event_items)
 
-    # 檔案處理
     file_py = request.files.get("py")
     file_pt = request.files.get("pt")
 
@@ -983,29 +808,33 @@ def create_model():
     if not file_pt or not allowed_file(file_pt.filename, ALLOWED_MODEL_EXTENSIONS):
         return jsonify({"error": f"缺少或不支援的 pt 檔案，允許：{', '.join(ALLOWED_MODEL_EXTENSIONS)}"}), 400
 
-    # 建立模型資料夾
     model_folder = os.path.join(MODEL_UPLOAD_FOLDER, name)
     if os.path.exists(model_folder):
         cursor.close()
         return jsonify({"error": f"模型資料夾 '{name}' 已存在，請確認是否命名重複"}), 400
     os.makedirs(model_folder)
 
-    # 儲存檔案
-    filepath_py = os.path.join(model_folder, "model.py")
-    filepath_pt = os.path.join(model_folder, "model.pt")
+    filename_py = secure_filename(file_py.filename)
+    filename_pt = secure_filename(file_pt.filename)
+
+    filepath_py = os.path.join(model_folder, filename_py)
+    filepath_pt = os.path.join(model_folder, filename_pt)
+
     file_py.save(filepath_py)
     file_pt.save(filepath_pt)
 
-    model_path = json.dumps({"py": filepath_py, "pt": filepath_pt})
+    model_path = json.dumps({
+        "py": os.path.normpath(filepath_py),
+        "pt": os.path.normpath(filepath_pt)
+    }, ensure_ascii=False)
 
-    # 寫入 Models 資料表
+
     cursor.execute("""
         INSERT INTO Models (model_name, model_version, event_type, model_path)
         VALUES (%s, %s, %s, %s)
     """, (name, version, event_type, model_path))
     model_id = cursor.lastrowid
 
-    # 寫入 Events 資料表（逐筆 event_name）
     for event_name in event_items:
         cursor.execute("""
             INSERT INTO Events (event_name, model_id)
@@ -1015,14 +844,15 @@ def create_model():
     db.commit()
     cursor.close()
 
-    return jsonify({"message": "模型新增成功", "model_id": model_id}), 200
+    return '', 200
 
-#==================== 刪除模型 ====================
+#====================刪除模型====================
 @app.route('/model/delete', methods=["DELETE"])
 def delete_model():
     data = request.get_json()
     token = data.get("token", "")
     model_id = data.get("model_id")
+
     is_valid, payload = verify_admin_token(token)
     if not is_valid:
         return jsonify({"error": payload}), 401
@@ -1040,109 +870,199 @@ def delete_model():
         return jsonify({"error": "找不到該模型"}), 404
 
     model_name = model["model_name"]
-    model_folder = os.path.join(UPLOAD_FOLDER, model_name)
+    model_folder = os.path.join(MODEL_UPLOAD_FOLDER, model_name)
     if os.path.exists(model_folder):
-        try:
-            shutil.rmtree(model_folder)
-        except Exception as e:
-            print(f"刪除資料夾失敗: {e}")
+        shutil.rmtree(model_folder)
 
-    cursor.execute("DELETE FROM EventProjectRelations WHERE event_id IN (SELECT event_id FROM Events WHERE model_id = %s)", (model_id,))
+
+    cursor.execute("SELECT project_id FROM ModelProjectRelations WHERE model_id = %s", (model_id,))
+    project_ids = [row["project_id"] for row in cursor.fetchall()]
+
+    cursor.execute("""
+        DELETE FROM EventProjectRelations 
+        WHERE event_id IN (SELECT event_id FROM Events WHERE model_id = %s)
+    """, (model_id,))
+
     cursor.execute("DELETE FROM Events WHERE model_id = %s", (model_id,))
+
+    cursor.execute("DELETE FROM ModelProjectRelations WHERE model_id = %s", (model_id,))
+
+    if project_ids:
+        format_ids = ",".join(["%s"] * len(project_ids))
+        cursor.execute(f"DELETE FROM Projects WHERE project_id IN ({format_ids})", tuple(project_ids))
+
     cursor.execute("DELETE FROM Models WHERE model_id = %s", (model_id,))
+
     db.commit()
     cursor.close()
 
     return '', 200
 
-#==================== 修改模型 ====================
+#====================修正模型====================
 @app.route('/model/update', methods=["POST"])
 def update_model():
-    print("收到的欄位：", request.form.to_dict())  # Debug: 確認收到的欄位
-    print("收到的檔案：", list(request.files.keys()))  # Debug: 確認收到的檔案
-
     token = request.form.get("token", "")
     is_valid, payload = verify_admin_token(token)
     if not is_valid:
         return jsonify({"error": payload}), 401
     if not payload.get("is_admin"):
-        return jsonify({"error": "只有管理者可以修改模型"}), 403
+        return jsonify({"error": "只有管理者可以修正模型"}), 403
 
     model_id = request.form.get("model_id", "").strip()
+    name = request.form.get("name", "").strip()
+    version = request.form.get("version", "").strip()
+    raw_event = request.form.get("event", "").strip()
     if not model_id:
         return jsonify({"error": "缺少 model_id"}), 400
-        
-    model_event_info = json.loads(request.form.get("model_event_info", "{}"))
-    name = model_event_info.get("name", "").strip()
-    version = model_event_info.get("version", "").strip()
-    raw_event = model_event_info.get("event", [])
-    event_type = ",".join(raw_event) if raw_event else ""
+
+    cursor = db.cursor()
+    cursor.execute("SELECT model_name, model_version, event_type, model_path FROM Models WHERE model_id = %s", (model_id,))
+    row = cursor.fetchone()
+    if not row:
+        cursor.close()
+        return jsonify({"error": "找不到該模型"}), 404
+
+    old_name = row[0]
+    old_version = row[1] or ""
+    old_event_str = row[2] or ""
+    old_path_json = row[3] or "{}"
+
+    try:
+        model_path = json.loads(old_path_json) if old_path_json else {}
+    except Exception:
+        model_path = {}
+
+    new_name = name or old_name
+    new_version = version or old_version
+
+    if new_name != old_name:
+        cursor.execute("SELECT 1 FROM Models WHERE model_name = %s", (new_name,))
+        if cursor.fetchone():
+            cursor.close()
+            return jsonify({"error": f"模型名稱 '{new_name}' 已存在，請重新命名"}), 400
+
+    if raw_event:
+        new_event_items = [e.strip() for e in raw_event.split(",") if e.strip()]
+        if not new_event_items:
+            cursor.close()
+            return jsonify({"error": "事件格式錯誤，請以逗號分隔"}), 400
+        new_event_set = set(new_event_items)
+        new_event_type_str = ",".join(sorted(new_event_set))
+    else:
+        new_event_set = None
+        new_event_type_str = old_event_str
 
     file_py = request.files.get("py")
     file_pt = request.files.get("pt")
 
-    cursor = db.cursor(pymysql.cursors.DictCursor)
-    cursor.execute("SELECT * FROM Models WHERE model_id = %s", (model_id,))
-    model = cursor.fetchone()
-    if not model:
-        cursor.close()
-        return jsonify({"error": "找不到該模型"}), 404
+    def allowed(filename, allow):
+        return '.' in filename and filename.rsplit('.', 1)[1].lower() in allow
 
-    old_model_name = model["model_name"]
-    old_model_path = json.loads(model["model_path"])
-    old_folder = os.path.join(UPLOAD_FOLDER, old_model_name)
-    new_folder = os.path.join(UPLOAD_FOLDER, name or old_model_name)
+    allow_py = {"py"}
+    allow_pt = {"pt"}
 
-    if name and name != old_model_name and os.path.exists(old_folder):
-        shutil.move(old_folder, new_folder)
-    else:
-        os.makedirs(new_folder, exist_ok=True)
+    model_folder_old = os.path.join(MODEL_UPLOAD_FOLDER, old_name)
+    model_folder_new = os.path.join(MODEL_UPLOAD_FOLDER, new_name)
 
-    filepath_py = os.path.join(new_folder, "model.py")
-    filepath_pt = os.path.join(new_folder, "model.pt")
-
-    if file_py and allowed_file(file_py.filename):
-        if os.path.exists(filepath_py):
-            os.remove(filepath_py)
-        file_py.save(filepath_py)
-        old_model_path["py"] = filepath_py
-
-    if file_pt and allowed_file(file_pt.filename):
-        if os.path.exists(filepath_pt):
-            os.remove(filepath_pt)
-        file_pt.save(filepath_pt)
-        old_model_path["pt"] = filepath_pt
-
-    model_path_json = json.dumps(old_model_path)
-    update_fields = {
-        "model_name": name,
-        "model_version": version,
-        "event_type": event_type,
-        "model_path": model_path_json
+    changed = {
+        "model_name_changed": False,
+        "model_version_changed": False,
+        "files_updated": [],
+        "event_added": [],
+        "event_deleted": []
     }
 
-    set_clause = ", ".join(f"{k} = %s" for k in update_fields)
-    values = list(update_fields.values())
-    values.append(model_id)
-    
-    cursor.execute(f"""
-        UPDATE Models
-        SET {set_clause}
-        WHERE model_id = %s
-    """, tuple(values))
-    
-    db.commit()
-    cursor.execute("SELECT * FROM Models WHERE model_id = %s", (model_id,))
-    updated_model = cursor.fetchone()
+    if new_name != old_name:
+        if os.path.exists(model_folder_new):
+            cursor.close()
+            return jsonify({"error": f"目標模型資料夾 '{new_name}' 已存在"}), 400
+        os.makedirs(model_folder_new, exist_ok=True)
+        for key in ("py", "pt"):
+            old_file_path = model_path.get(key)
+            if old_file_path and os.path.exists(old_file_path):
+                new_file_path = os.path.join(model_folder_new, os.path.basename(old_file_path))
+                shutil.move(old_file_path, new_file_path)
+                model_path[key] = os.path.normpath(new_file_path)
+        try:
+            os.rmdir(model_folder_old)
+        except OSError:
+            pass
+        changed["model_name_changed"] = True
+    else:
+        os.makedirs(model_folder_new, exist_ok=True)
 
+    if file_py:
+        if not allowed(file_py.filename, allow_py):
+            cursor.close()
+            return jsonify({"error": "不支援的 py 檔案（允許：.py）"}), 400
+        old_py_path = model_path.get("py")
+        filename_py = secure_filename(file_py.filename)
+        new_py_path = os.path.join(model_folder_new, filename_py)
+        file_py.save(new_py_path)
+        model_path["py"] = os.path.normpath(new_py_path)
+        if old_py_path and os.path.abspath(old_py_path) != os.path.abspath(new_py_path) and os.path.exists(old_py_path):
+            try:
+                os.remove(old_py_path)
+            except OSError:
+                pass
+        changed["files_updated"].append("py")
+
+    if file_pt:
+        if not allowed(file_pt.filename, allow_pt):
+            cursor.close()
+            return jsonify({"error": "不支援的 pt 檔案（允許：.pt）"}), 400
+        old_pt_path = model_path.get("pt")
+        filename_pt = secure_filename(file_pt.filename)
+        new_pt_path = os.path.join(model_folder_new, filename_pt)
+        file_pt.save(new_pt_path)
+        model_path["pt"] = os.path.normpath(new_pt_path)
+        if old_pt_path and os.path.abspath(old_pt_path) != os.path.abspath(new_pt_path) and os.path.exists(old_pt_path):
+            try:
+                os.remove(old_pt_path)
+            except OSError:
+                pass
+        changed["files_updated"].append("pt")
+
+    if new_version != old_version:
+        changed["model_version_changed"] = True
+
+    cursor.execute("""
+        UPDATE Models
+        SET model_name = %s, model_version = %s, event_type = %s, model_path = %s
+        WHERE model_id = %s
+    """, (
+        new_name,
+        new_version,
+        new_event_type_str,
+        json.dumps(model_path, ensure_ascii=False),
+        model_id
+    ))
+
+    if new_event_set is not None:
+        c2 = db.cursor(pymysql.cursors.DictCursor)
+        c2.execute("SELECT event_id, event_name FROM Events WHERE model_id = %s", (model_id,))
+        rows = c2.fetchall()
+        old_name_to_id = {r["event_name"]: r["event_id"] for r in rows}
+        old_event_set = set(old_name_to_id.keys())
+        to_add = list(new_event_set - old_event_set)
+        to_del = list(old_event_set - new_event_set)
+        for ename in to_add:
+            c2.execute("INSERT INTO Events (event_name, model_id) VALUES (%s, %s)", (ename, model_id))
+            changed["event_added"].append(ename)
+        for ename in to_del:
+            eid = old_name_to_id.get(ename)
+            c2.execute("DELETE FROM EventProjectRelations WHERE event_id = %s", (eid,))
+            c2.execute("DELETE FROM AbnormalEvents WHERE event_id = %s", (eid,))
+            c2.execute("DELETE FROM Events WHERE event_id = %s", (eid,))
+            changed["event_deleted"].append(ename)
+        c2.close()
+
+    db.commit()
     cursor.close()
 
-    if updated_model:
-        return '', 200
-    else:
-        return jsonify({"error": "更新後的模型資料無法查詢"}), 500
-        
-#==================== 讀取模型(使用者、管理者都可用) ====================
+    return '', 200
+
+#====================讀取模型(使用者、管理者都可用)====================
 @app.route('/model', methods=["POST"])
 def list_models():
     data = request.get_json()
@@ -1153,17 +1073,37 @@ def list_models():
 
     is_admin = payload.get("is_admin", False)
 
-    with db.cursor(pymysql.cursors.DictCursor) as cursor:
-        if is_admin:
-            cursor.execute("SELECT model_id, model_name, model_version, event_type, model_path FROM Models")
-        else:
-            cursor.execute("SELECT model_id, model_name, model_version, event_type FROM Models")
+    cursor = db.cursor()
+    if is_admin:
+        cursor.execute("SELECT model_id, model_name, model_version, event_type, model_path FROM Models")
+    else:
+        cursor.execute("SELECT model_id, model_name, model_version, event_type FROM Models")
 
-        models = cursor.fetchall()
+    rows = cursor.fetchall()
+    cursor.close()
+
+    models = []
+    for row in rows:
+        if is_admin:
+            model = {
+                "model_id": row[0],
+                "model_name": row[1],
+                "model_version": row[2],
+                "event_type": row[3],
+                "model_path": json.loads(row[4])
+            }
+        else:
+            model = {
+                "model_id": row[0],
+                "model_name": row[1],
+                "model_version": row[2],
+                "event_type": row[3]
+            }
+        models.append(model)
 
     return jsonify({"models": models}), 200
 
-#新增專案
+#====================新增專案====================
 @app.route('/project/create', methods=['POST'])
 def create_project():
     data = request.get_json()
@@ -1267,7 +1207,7 @@ def create_project():
     cursor.close()
     return '', 200
 
-#刪除專案
+#====================刪除專案====================
 @app.route('/project/delete', methods=["DELETE"])
 def delete_project():
     data = request.get_json()
@@ -1301,7 +1241,7 @@ def delete_project():
     cursor.close()
     return '', 200
 
-#修改專案
+#====================修改專案====================
 @app.route('/project/update', methods=["POST"])
 def update_project():
     data = request.get_json()
@@ -1430,11 +1370,11 @@ def update_project():
     cursor.close()
     return '', 200
 
-#讀取專案
+#====================讀取專案====================
 @app.route('/project', methods=["GET"])
 def read_project():
-    data = request.get_json()
-    token = data.get('token', '')
+    #data = request.get_json()
+    token = request.args.get('token', '')
 
     is_valid, payload = verify_token(token)
     if not is_valid:
@@ -1507,7 +1447,7 @@ def read_project():
             "camera_name": camera_name,
             "device_id": device_id,
             "device_name": device_name,
-            "start_time": json.loads(project['start_time']),
+            "start_time": str(project['start_time']),
             "status": project['status'],
             "contact_ids": [c['contact_id'] for c in contacts],
             "contact_names": [c['contact_name'] for c in contacts],
@@ -1520,9 +1460,10 @@ def read_project():
         all_project_details.append(project_details)
 
     cursor.close()
+    print(json.dumps(all_project_details, ensure_ascii=False, indent=2)) 
     return jsonify(all_project_details), 200
 
-#取得所有啟用的專案列表
+#====================取得所有啟用的專案列表====================
 @app.route("/projects", methods=["GET"])
 def get_all_projects():
     data = request.get_json()
@@ -1600,7 +1541,7 @@ def get_all_projects():
     cursor.close()
     return jsonify(projects), 200
 
-#取得單個專案的詳細資料
+#====================取得單個專案的詳細資料====================
 @app.route("/project/<int:project_id>", methods=["GET"])
 def get_project(project_id):
     data = request.get_json()
@@ -1679,7 +1620,7 @@ def get_project(project_id):
         "model_paths": {"py": py_path, "pt": pt_path}
     }), 200
 
-#找下一筆專案
+#====================找下一筆專案====================
 @app.route('/project/next', methods=['GET'])
 def get_next_project():
     data = request.get_json()
@@ -1780,12 +1721,13 @@ def get_next_project():
         "status": project["status"]
     }), 200
 
-#新增裝置(管理者)
+#====================新增裝置(管理者)====================
 @app.route('/device/create', methods=['POST'])
 def create_device():
     data = request.get_json()
     token = data.get("token", "")
     model = data.get("model", "").strip()
+    device_name = data.get("device_name", "").strip()
 
     is_valid, payload = verify_admin_token(token)
     if not is_valid:
@@ -1793,20 +1735,27 @@ def create_device():
 
     if not model:
         return jsonify({"status": "error", "message": "缺少 model"}), 400
+    if not device_name:
+        return jsonify({"status": "error", "message": "缺少 device_name"}), 400
+
+    cursor = db.cursor(pymysql.cursors.DictCursor)
+
+    cursor.execute("SELECT 1 FROM Devices WHERE device_name = %s", (device_name,))
+    if cursor.fetchone():
+        cursor.close()
+        return jsonify({"status": "error", "message": "裝置名稱已存在"}), 400
 
     device_id = str(uuid.uuid1())
-    cursor = db.cursor()
     cursor.execute("""
-        INSERT INTO Devices (device_id, user_id, Model)
-        VALUES (%s, %s, %s)
-    """, (device_id, None, model))
+        INSERT INTO Devices (device_id, user_id, device_name, Model)
+        VALUES (%s, %s, %s, %s)
+    """, (device_id, None, device_name, model))
 
     db.commit()
     cursor.close()
+    return '', 200
 
-    return jsonify({"device_id": device_id}), 200
-
-#查詢裝置(管理者)
+#====================查詢裝置(管理者)====================
 @app.route('/admin/device/list', methods=["POST"])
 def admin_list_devices():
     data = request.get_json()
@@ -1836,7 +1785,7 @@ def admin_list_devices():
 
     return jsonify({"devices": devices}), 200
 
-#修改裝置(管理者)
+#====================修改裝置(管理者)====================
 @app.route('/device/update', methods=['POST'])
 def update_device():
     data = request.get_json()
@@ -1872,7 +1821,7 @@ def update_device():
 
     return '', 200
 
-#刪除裝置(管理者)
+#====================刪除裝置(管理者)====================
 @app.route('/admin/device/delete', methods=['DELETE'])
 def admin_delete_device():
     data = request.get_json()
@@ -1908,7 +1857,7 @@ def admin_delete_device():
 
     return '', 200
 
-#綁定裝置(使用者)
+#====================綁定裝置(使用者)====================
 @app.route('/device/bind', methods=['POST'])
 def bind_device():
     data = request.get_json()
@@ -1943,7 +1892,7 @@ def bind_device():
 
     return '', 200
 
-#刪除裝置(使用者)
+#====================刪除裝置(使用者)====================
 @app.route('/device/delete', methods=['DELETE'])
 def delete_device():
     data = request.get_json()
@@ -2006,7 +1955,7 @@ def delete_device():
 
     return '', 200
 
-#查詢裝置(使用者)
+#====================查詢裝置(使用者)====================
 @app.route('/device/list', methods=['GET'])
 def list_user_devices():
     data = request.get_json()
@@ -2019,7 +1968,7 @@ def list_user_devices():
 
     cursor = db.cursor(pymysql.cursors.DictCursor)
     cursor.execute("""
-        SELECT Manufacture_date, Model
+        SELECT device_name, Manufacture_date, Model
         FROM Devices
         WHERE user_id = %s
     """, (user_id,))
@@ -2044,7 +1993,7 @@ def get_abnormal_events():
 
     cursor = db.cursor(pymysql.cursors.DictCursor)
     try:
-        cursor.execute("SELECT project_id, start_time FROM Projects WHERE user_id = %s", (user_id,))
+        cursor.execute("SELECT project_id FROM Projects WHERE user_id = %s", (user_id,))
         projects = cursor.fetchall()
 
         if not projects:
@@ -2052,17 +2001,25 @@ def get_abnormal_events():
 
         project_ids = [project['project_id'] for project in projects]
 
-        base_query = """
-            SELECT DISTINCT ae.abnormal_id, e.event_name, m.model_name, ae.occurred_at, p.start_time
+        base_query = f"""
+            SELECT DISTINCT 
+                ae.abnormal_id,
+                e.event_name,
+                m.model_name,
+                ae.occurred_at,
+                p.start_time,
+                d.device_name,
+                c.camera_name
             FROM AbnormalEvents ae
             JOIN EventProjectRelations epr ON ae.event_id = epr.event_id
             JOIN Events e ON ae.event_id = e.event_id
             JOIN ModelProjectRelations mpr ON epr.project_id = mpr.project_id
             JOIN Models m ON mpr.model_id = m.model_id
             JOIN Projects p ON epr.project_id = p.project_id
-            WHERE epr.project_id IN ({})
-
-        """.format(','.join(['%s'] * len(project_ids)))
+            JOIN Devices d ON p.device_id = d.device_id
+            JOIN Cameras c ON p.camera_id = c.camera_id
+            WHERE p.project_id IN ({','.join(['%s'] * len(project_ids))})
+        """
         params = project_ids.copy()
 
         if event_name_filter:
@@ -2080,65 +2037,129 @@ def get_abnormal_events():
 
         cursor.execute(base_query, params)
         abnormal_events = cursor.fetchall()
+        cursor.close()
 
         import json
         for event in abnormal_events:
-            if 'abnormal_id' in event:
-                del event['abnormal_id']
-            if 'picture_url' in event:
-                del event['picture_url']
+            event.pop('abnormal_id', None)
+            event['start'] = {}
             if 'start_time' in event:
                 try:
                     event['start'] = json.loads(event['start_time'])
                 except (TypeError, json.JSONDecodeError):
                     event['start'] = {}
                 del event['start_time']
-        
-        #print(abnormal_events)
-        
+
         return jsonify({
+            "total": total,
             "abnormal_events": abnormal_events
         }), 200
 
     except Exception as e:
-        return jsonify({"error": f"異常事件查詢失敗: {str(e)}"}), 500
-
-    finally:
         cursor.close()
-
+        return jsonify({"error": f"異常事件查詢失敗: {str(e)}"}), 500
 @app.route('/events/event_types', methods=['POST'])
 def get_event_types():
     data = request.get_json()
-    token = data.get('token', '')           
 
+    token = data.get('token', '')
     is_valid, payload = verify_token(token)
     if not is_valid:
         return jsonify({"error": payload}), 401
 
     user_id = payload.get('user_id')
+    if not user_id:
+        return jsonify({"error": "Token 中缺少 user_id"}), 400
 
+    event_type = data.get('event_type', None)
     cursor = db.cursor(pymysql.cursors.DictCursor)
+
     try:
-        print('if stop here means wrong before query')
-        cursor.execute("select e.event_name,m.model_name, m.model_version from events e inner join models m on e.model_id=m.model_id")
-        print('if stop here means wrong after query')
-        event_types = cursor.fetchall()
-        print(event_types)
-        if not event_types:
-            return jsonify({"total": 0, "event_types": []}), 200
-        
-        
+
+        if event_type:
+            cursor.execute("""
+                SELECT 
+                    d.device_name,
+                    c.camera_name,
+                    m.model_name,
+                    e.event_name
+                FROM Events e
+                INNER JOIN EventProjectRelations epr ON e.event_id = epr.event_id
+                INNER JOIN Projects p ON epr.project_id = p.project_id
+                INNER JOIN Devices d ON p.device_id = d.device_id
+                INNER JOIN Cameras c ON p.camera_id = c.camera_id
+                INNER JOIN Models m ON e.model_id = m.model_id
+                WHERE p.user_id = %s AND e.event_name = %s
+            """, (user_id, event_type))
+        else:
+            cursor.execute("""
+                SELECT 
+                    d.device_name,
+                    c.camera_name,
+                    m.model_name,
+                    e.event_name
+                FROM Events e
+                INNER JOIN EventProjectRelations epr ON e.event_id = epr.event_id
+                INNER JOIN Projects p ON epr.project_id = p.project_id
+                INNER JOIN Devices d ON p.device_id = d.device_id
+                INNER JOIN Cameras c ON p.camera_id = c.camera_id
+                INNER JOIN Models m ON e.model_id = m.model_id
+                WHERE p.user_id = %s
+            """, (user_id,))
+
+        results = cursor.fetchall()
+        cursor.close()
+
         return jsonify({
-            "event_types": event_types
+            "total": len(results),
+            "event_types": results
         }), 200
 
     except Exception as e:
+        cursor.close()
         return jsonify({"error": f"事件類型查詢失敗: {str(e)}"}), 500
 
-    finally:
-        cursor.close()
+@app.route('/events/project', methods=['POST'])
+def abnormal_project():
+    data = request.get_json()
 
-#加好友
+    token = data.get('token', '')  
+    if not token:
+        return jsonify({"error": "缺少 Authorization Token"}), 401
+
+    is_valid, payload = verify_token(token)
+    if not is_valid:
+        return jsonify({"error": payload}), 401
+
+    project_id = data.get("project_id")
+    if not project_id:
+        return jsonify({"error": "缺少 project_id"}), 400
+
+    cursor = db.cursor(pymysql.cursors.DictCursor)
+    cursor.execute("""
+        SELECT 
+            d.device_name,
+            c.camera_name,
+            m.model_name,
+            e.event_name
+        FROM AbnormalEvents ae
+        JOIN Projects p ON ae.project_id = p.project_id
+        JOIN Devices d ON p.device_id = d.device_id
+        JOIN Cameras c ON p.camera_id = c.camera_id
+        JOIN Events e ON ae.event_id = e.event_id
+        JOIN Models m ON e.model_id = m.model_id
+        WHERE ae.project_id = %s
+    """, (project_id,))
+
+    results = cursor.fetchall()
+    cursor.close()
+
+    return jsonify({
+        "total": len(results),
+        "abnormal_events": results
+    }), 200
+
+#====================加好友====================
 @app.route("/webhook", methods=["POST"])
 def webhook():
     data = request.get_json()
@@ -2146,9 +2167,20 @@ def webhook():
         if event.get("type") == "follow":
             messaging_user_id = event["source"]["userId"]
             print("✅ 使用者加好友，Messaging userId:", messaging_user_id)
+
+            headers = {
+                "Authorization": f"Bearer {LINE_CHANNEL_ACCESS_TOKEN}"  # 修正這行
+            }
+            response = requests.get(f"https://api.line.me/v2/bot/profile/{messaging_user_id}", headers=headers)
+            if response.status_code == 200:
+                profile = response.json()
+                print("✅ 名稱:", profile["displayName"])
+            else:
+                print("❌ 無法取得名稱", response.status_code, response.text)
+
     return "OK"
 
-#綁定
+#====================綁定====================
 @app.route("/bind_message_line_id", methods=["POST"])
 def bind_message_line_id():
     data = request.get_json()
@@ -2185,11 +2217,11 @@ def shorten_url(long_url):
     except:
         pass
     return long_url
-
-#事件通知
+from flask import url_for
+#====================事件通知====================
 @app.route('/event/abnormal', methods=["POST"])
 def create_abnormal_event():
-    data = request.get_json()
+    data = request.form
     token = data.get("token", "")
     is_valid, payload = verify_token(token)
     if not is_valid:
@@ -2199,9 +2231,9 @@ def create_abnormal_event():
 
     project_id = data.get("project_id")
     event_id = data.get("event_id")
-    picture_url = data.get("picture_url", "").strip()
+    picture = request.files.get("picture")
 
-    if not all([project_id, event_id, picture_url]):
+    if not all([project_id, event_id, picture]):
         return jsonify({"error": "缺少必要欄位"}), 400
 
     occurred_at = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
@@ -2256,9 +2288,15 @@ def create_abnormal_event():
         cursor.execute("""
             INSERT INTO AbnormalEvents (project_id, event_id, picture_url, occurred_at)
             VALUES (%s, %s, %s, %s)
-        """, (project_id, event_id, picture_url, occurred_at))
+        """, (project_id, event_id, "", occurred_at))
         db.commit()
         cursor.close()
+
+        picture_filename = secure_filename(picture.filename)
+        picture_path = os.path.join(PICTURE_UPLOAD_FOLDER, picture_filename)
+        picture.save(picture_path)
+
+        picture_url = f"http://127.0.0.1:5000/pictures/{picture_filename}"
         short_url = shorten_url(picture_url)
 
         message = (
@@ -2280,7 +2318,7 @@ def create_abnormal_event():
         db.rollback()
         cursor.close()
         return jsonify({"error": f"發送通知失敗: {str(e)}"}), 500
-
+    
 #即時串流(可能要改、因為改成樹梅派)
 '''
 @app.route('/streaming', methods=['POST'])
@@ -2344,7 +2382,7 @@ def streaming():
         return jsonify({"error": str(e)}), 500
 '''
 
-#抓取照片
+#====================抓取照片====================
 @app.route('/upload/photo', methods=['POST'])
 def upload_photo():
     token = request.form.get('token', '').strip()
@@ -2375,7 +2413,6 @@ def upload_photo():
         }), 200
 
     return jsonify({"error": "不支援的檔案格式"}), 400
-
 
 #測試
 @app.route('/generate_test_token', methods=['GET'])
