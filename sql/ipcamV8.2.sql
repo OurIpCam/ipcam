@@ -30,7 +30,7 @@ CREATE TABLE Cameras (
 CREATE TABLE Devices (
     device_id CHAR(36) PRIMARY KEY,
     user_id INT,
-    device_name VARCHAR(20) NOT NULL,
+    device_name VARCHAR(20),
     Manufacture_date DATETIME DEFAULT CURRENT_TIMESTAMP,
     Model VARCHAR(10) NOT NULL,
     FOREIGN KEY (user_id) REFERENCES Users(user_id)
@@ -103,4 +103,5 @@ CREATE TABLE AbnormalEvents (
 INSERT INTO Admin(admin_id)
 VALUE(2);
 INSERT INTO Devices(device_id, user_id, Model)
+
 VALUES (UUID(), NULL,'v1.1'),(UUID(), NULL,'v1.1'),(UUID(), NULL,'v1.1'),(UUID(), NULL,'v1.1')
